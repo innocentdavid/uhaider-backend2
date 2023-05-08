@@ -53,7 +53,7 @@ class PDdfsViewSet(viewsets.ModelViewSet):
     parser_classes = (parsers.MultiPartParser, parsers.FormParser)
 
     def create(self, request, *args, **kwargs):
-        print(request.data)
+        # print(request.data)
         pdf_type = request.data['pdf_type']
         application_id = request.data['application_id']
 
@@ -164,6 +164,7 @@ class ApplicationViewSet(viewsets.ModelViewSet):
             return Response(response_data, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 
 def update_application(request, application_id):
