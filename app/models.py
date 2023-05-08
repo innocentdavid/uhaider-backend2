@@ -1,9 +1,13 @@
 from django.db import models
 from django.utils import timezone
-
+from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser
 import random
 import string
 
+
+class CustomUser(AbstractUser):
+    pass
 
 def generate_random_string(length=6):
     """Generate a random alphanumeric string of specified length."""
