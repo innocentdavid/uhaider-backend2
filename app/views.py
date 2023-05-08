@@ -6,6 +6,12 @@ from rest_framework.response import Response
 from .models import *
 from .serializers import *
 import base64
+from rest_framework import generics
+# mongodb+srv://devcent:JPifHZQhFtShsa0Y@fintechapicluster0.t1cpxfd.mongodb.net/test
+
+
+class UserCreateAPIView(generics.CreateAPIView):
+    serializer_class = UserSerializer
 
 
 class StatusViewSet(viewsets.ModelViewSet):
