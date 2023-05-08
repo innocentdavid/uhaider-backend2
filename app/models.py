@@ -15,7 +15,8 @@ class Movie(models.Model):
     movie_id = models.CharField(
         max_length=250, default=generate_random_string)
     name = models.CharField(max_length=250, default="", null=True, blank=True)
-    genre = models.CharField(max_length=2550, default="", null=True, blank=True)
+    genre = models.CharField(
+        max_length=2550, default="", null=True, blank=True)
     starring = models.CharField(
         max_length=350, default="", null=True, blank=True)
     users_cash_advance = models.CharField(
@@ -26,7 +27,8 @@ class Movie(models.Model):
 
 
 class Status(models.Model):
-    name = models.CharField(max_length=255, primary_key=True, default="Submited", null=False, blank=False)
+    name = models.CharField(max_length=255, primary_key=True,
+                            default="Submited", null=False, blank=False)
     description = models.CharField(
         max_length=255, default="", null=True, blank=True)
 
@@ -41,21 +43,20 @@ class Application(models.Model):
         max_length=255, default="", null=True, blank=True)
     status = models.ForeignKey(
         Status, on_delete=models.PROTECT, related_name='applications', null=True, blank=True)
+    status_date = models.CharField(
+        max_length=255, default="", null=True, blank=True)
+
+    owners = models.CharField(
+        max_length=255, default="", null=True, blank=True)
+    business_name_match_flag = models.CharField(
+        max_length=255, default="NAN")
+    credit_score = models.CharField(
+        max_length=255, default="NAN")
 
     name_of_business = models.CharField(
         max_length=255, default="", null=True, blank=True)
-
-    status_date = models.CharField(
-        max_length=255, default="", null=True, blank=True)
     legal_business_name = models.CharField(
         max_length=255, default="", null=True, blank=True)
-    owners = models.CharField(
-        max_length=255, default="", null=True, blank=True)
-    users_cash_advance = models.CharField(
-        max_length=255, default="", null=True, blank=True)
-    have_cash_advance = models.CharField(
-        max_length=255, default="", null=True, blank=True)
-
     dba = models.CharField(max_length=255, default="", null=True, blank=True)
     address = models.CharField(
         max_length=255, default="", null=True, blank=True)
@@ -72,7 +73,18 @@ class Application(models.Model):
         max_length=255, default="", null=True, blank=True)
     date_business_started = models.CharField(
         max_length=255, default="", null=True, blank=True)
-    mobile = models.CharField(max_length=255, default="", null=True, blank=True)
+    years_at_location = models.CharField(
+        max_length=255, default="", null=True, blank=True)
+    number_of_locations = models.CharField(
+        max_length=255, default="", null=True, blank=True)
+    length_of_ownership = models.CharField(
+        max_length=255, default="", null=True, blank=True)
+    state_of_inc = models.CharField(
+        max_length=255, default="", null=True, blank=True)
+    legal_entity = models.CharField(
+        max_length=255, default="", null=True, blank=True)
+    mobile = models.CharField(
+        max_length=255, default="", null=True, blank=True)
     email = models.CharField(max_length=255, default="", null=True, blank=True)
 
     owner_first_name = models.CharField(
@@ -96,13 +108,6 @@ class Application(models.Model):
     owner_phone = models.CharField(
         max_length=255, default="", null=True, blank=True)
 
-    federal_tax_id = models.CharField(
-        max_length=255, default="", null=True, blank=True)
-    state_of_inc = models.CharField(
-        max_length=255, default="", null=True, blank=True)
-    legal_entity = models.CharField(
-        max_length=255, default="", null=True, blank=True)
-    date_business_started = models.CharField(max_length=255, default="", null=True, blank=True)
     gross_monthly_sales = models.CharField(
         max_length=255, default="", null=True, blank=True)
     type_of_product_sold = models.CharField(
@@ -113,31 +118,28 @@ class Application(models.Model):
         max_length=255, default="", null=True, blank=True)
     using_money_for = models.CharField(
         max_length=255, default="", null=True, blank=True)
-    bank_name = models.CharField(
-        max_length=255, default="", null=True, blank=True)
-    begin_bal_date = models.CharField(
-        max_length=255, default="", null=True, blank=True)
-    begin_bal_amount = models.CharField(
-        max_length=255, default="", null=True, blank=True)
     description_of_business = models.CharField(
         max_length=255, default="", null=True, blank=True)
-    length_of_ownership = models.CharField(
-        max_length=255, default="", null=True, blank=True)
-    years_at_location = models.CharField(
-        max_length=255, default="", null=True, blank=True)
-    credit_score = models.CharField(
-        max_length=255, default="", null=True, blank=True)
-    ending_bal_amount = models.CharField(
-        max_length=255, default="", null=True, blank=True)
-    ending_bal_date = models.CharField(
-        max_length=255, default="", null=True, blank=True)
-    total_deposit = models.CharField(
-        max_length=255, default="", null=True, blank=True)
-    business_name_match_flag = models.CharField(
-        max_length=255, default="", null=True, blank=True)
+
     advanced_price = models.CharField(
         max_length=255, default="", null=True, blank=True)
     commission_price = models.CharField(
+        max_length=255, default="", null=True, blank=True)
+    percentage = models.CharField(
+        max_length=255, default="", null=True, blank=True)
+    factor = models.CharField(
+        max_length=255, default="", null=True, blank=True)
+    total_fee = models.CharField(
+        max_length=255, default="", null=True, blank=True)
+    payback = models.CharField(
+        max_length=255, default="", null=True, blank=True)
+    term = models.CharField(
+        max_length=255, default="", null=True, blank=True)
+    frequency = models.CharField(
+        max_length=255, default="", null=True, blank=True)
+    payment = models.CharField(
+        max_length=255, default="", null=True, blank=True)
+    net_funding_amount = models.CharField(
         max_length=255, default="", null=True, blank=True)
 
     def __str__(self):
@@ -148,25 +150,24 @@ class ApplicationPDFs(models.Model):
     application = models.ForeignKey(
         Application, on_delete=models.CASCADE, related_name="applicationPDFs")
     file = models.FileField(upload_to='pdf_files/')
+    # file = models.BinaryField()
     pdf_type = models.CharField(
         max_length=255, default="", null=True, blank=True)
 
     business_name = models.CharField(
         max_length=255, default="", null=True, blank=True)
-    bank_name=models.CharField(
+    bank_name = models.CharField(
         max_length=255, default="", null=True, blank=True)
-    begin_bal_date=models.CharField(
+    begin_bal_date = models.CharField(
         max_length=255, default="", null=True, blank=True)
-    begin_bal_amount=models.CharField(
+    begin_bal_amount = models.CharField(
         max_length=255, default="", null=True, blank=True)
-    total_deposit=models.CharField(
+    total_deposit = models.CharField(
         max_length=255, default="", null=True, blank=True)
-    ending_bal_date=models.CharField(
+    ending_bal_date = models.CharField(
         max_length=255, default="", null=True, blank=True)
-    ending_bal_amount=models.CharField(
+    ending_bal_amount = models.CharField(
         max_length=255, default="", null=True, blank=True)
-
-
 
     def __str__(self):
         return f'{self.business_name} ({self.file.name})'
@@ -176,25 +177,24 @@ class PdfFile(models.Model):
     application = models.ForeignKey(
         Application, on_delete=models.CASCADE, related_name="pdfFiles")
     file = models.FileField(upload_to='pdf_files/')
+    # file = models.BinaryField()
     pdf_type = models.CharField(
         max_length=255, default="", null=True, blank=True)
 
     business_name = models.CharField(
         max_length=255, default="", null=True, blank=True)
-    bank_name=models.CharField(
+    bank_name = models.CharField(
         max_length=255, default="", null=True, blank=True)
-    begin_bal_date=models.CharField(
+    begin_bal_date = models.CharField(
         max_length=255, default="", null=True, blank=True)
-    begin_bal_amount=models.CharField(
+    begin_bal_amount = models.CharField(
         max_length=255, default="", null=True, blank=True)
-    total_deposit=models.CharField(
+    total_deposit = models.CharField(
         max_length=255, default="", null=True, blank=True)
-    ending_bal_date=models.CharField(
+    ending_bal_date = models.CharField(
         max_length=255, default="", null=True, blank=True)
-    ending_bal_amount=models.CharField(
+    ending_bal_amount = models.CharField(
         max_length=255, default="", null=True, blank=True)
-
-
 
     def __str__(self):
         return f'{self.business_name} ({self.file.name})'

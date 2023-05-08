@@ -28,6 +28,28 @@ class PdfFileSerializer(serializers.ModelSerializer):
         
 
 class ApplicationSerializer(serializers.ModelSerializer):
+    # status_description = serializers.CharField(source='status.description', read_only=True)
+
     class Meta:
         model = Application
         fields = "__all__"
+        depth = 1
+
+
+class ApplicationUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Application
+        fields = [
+            'name_of_business',
+            'status_date',
+            'advanced_price',
+            'commission_price',
+            'percentage',
+            'factor',
+            'total_fee',
+            'payback',
+            'term',
+            'frequency',
+            'payment',
+            'net_funding_amount',
+        ]
