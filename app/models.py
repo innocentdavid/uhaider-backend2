@@ -1,13 +1,19 @@
 from django.db import models
 from django.utils import timezone
-from django.contrib.auth.models import AbstractUser
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, Group, Permission
+# from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.utils.translation import gettext_lazy as _
 import random
 import string
-
-
 class CustomUser(AbstractUser):
-    pass
+    name = models.CharField(max_length=255, default='')
+    email = models.CharField(max_length=255, primary_key=True, unique=True)
+    password = models.CharField(max_length=255)
+    username = None
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = []
+
 
 def generate_random_string(length=6):
     """Generate a random alphanumeric string of specified length."""

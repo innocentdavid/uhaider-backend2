@@ -1,17 +1,121 @@
 # from django.shortcuts import render
 from django.http import JsonResponse
-from rest_framework import viewsets, parsers, generics
+from rest_framework import viewsets, parsers, generics, views
 # from requests import Response
-from rest_framework import status
+from rest_framework import status, exceptions
+from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from .models import *
 from .serializers import *
 import base64
 import tempfile
 import PyPDF2
+from django.views.decorators.csrf import csrf_exempt
+import jwt
+import datetime
 
 
-def get_application_pdfs(request, application_id):    
+class RegisterView(views.APIView):
+    def post(self, request):
+        serializer = UserSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+
+        payload = {
+            'id': user.email,
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=60),
+            'iat': datetime.datetime.utcnow()
+        }
+
+        token = jwt.encode(payload, 'secret', algorithm='HS256')
+        #    .decode('utf-8')
+        response = Response()
+        response.set_cookie(key="jwt", value=token, httponly=True)
+
+        response_data = serializer.data
+        # response_data['jwt'] = token
+        response_data['message'] = "success"
+        response.data = response_data
+        # response.status
+        return response
+
+        # return Response(response_data, status=status.HTTP_201_CREATED)
+
+
+class LoginView(views.APIView):
+    def post(self, request):
+        email = request.data['email']
+        password = request.data['password']
+
+        user = CustomUser.objects.filter(email=email).first()
+
+        if user is None:
+            raise exceptions.AuthenticationFailed('User not found!')
+
+        if not user.check_password(password):
+            raise exceptions.AuthenticationFailed('Password incorrect')
+
+        payload = {
+            'id': user.email,
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=60),
+            'iat': datetime.datetime.utcnow()
+        }
+
+        token = jwt.encode(payload, 'secret', algorithm='HS256')
+        # .decode('utf-8')
+        response = Response()
+        response.set_cookie(key="jwt", value=token, httponly=True)
+        response.data = {"message": 'success'}
+        return response
+
+        # return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class GetAuthUserView(views.APIView):
+    def get(self, request):
+        token = request.COOKIES.get('jwt')
+        if not token:
+            raise exceptions.AuthenticationFailed("Unauthenticated")
+
+        try:
+            payload = jwt.decode(token, 'secret', algorithms=["HS256"])
+        except jwt.exceptions.DecodeError:
+            # raise exceptions.AuthenticationFailed('Unauthenticated!')
+            return Response({"message": "Unauthenticated!"}, status=status.HTTP_401_UNAUTHORIZED)
+        except jwt.exceptions.InvalidSignatureError:
+            # raise exceptions.AuthenticationFailed('Invalid signature!')
+            return Response({"message": "Invalid signature!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except jwt.exceptions.ExpiredSignatureError:
+            # raise exceptions.AuthenticationFailed('Signature has expired!')
+            return Response({"message": "Signature has expired!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except jwt.exceptions.DecodeError:
+            # raise exceptions.AuthenticationFailed('Invalid token!')
+            return Response({"message": "Invalid token!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except:
+            # raise exceptions.AuthenticationFailed('Could not decode token!')
+            return Response({"message": "Could not decode token!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        try:
+            user = CustomUser.objects.filter(email = 'cent@gmail.com').first()
+            serializer = UserSerializer(user)
+
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except: 
+            return Response({"error", "Unsuccessful!"}, status=status.HTTP_200_OK)
+
+
+class LogoutView(views.APIView):
+    def post(self, request):
+        response = Response()
+        response.delete_cookie('jwt')
+        response.data = {
+            'message': 'success'
+        }
+        return response
+
+
+
+def get_application_pdfs(request, application_id):
     try:
         application = Application.objects.get(application_id=application_id)
     except Application.DoesNotExist:
@@ -156,8 +260,8 @@ class ApplicationViewSet(viewsets.ModelViewSet):
             application.status = Status.objects.get(name="Submitted")
             application.save()
 
-            print(application)
-            print(application.pk)
+            # print(application)
+            # print(application.pk)
             response_data = serializer.data
             response_data['application_id'] = application_id
 
@@ -165,95 +269,10 @@ class ApplicationViewSet(viewsets.ModelViewSet):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
 
-
-def update_application(request, application_id):
-    try:
-        application = Application.objects.get(
-            application_id=application_id)
-    except Application.DoesNotExist:
-        return Response({"error": "Application not found"}, status=status.HTTP_404_NOT_FOUND)
-            
-    status_name = request.data.get('status')
-    status_description = request.data.get('status_description')
-    if status_name:
-        status_obj, created = Status.objects.get_or_create(
-            name=status_name, description=status_description)
-        application.status = status_obj
-        application.save()
-
-    # Update other fields as necessary
-    application.name_of_business = request.data.get('name_of_business')
-    application.status_date = request.data.get('status_date')
-    application.advanced_price = request.data.get('advanced_price')
-    application.commission_price = request.data.get('commission_price')
-    application.percentage = request.data.get('percentage')
-    application.factor = request.data.get('factor')
-    application.total_fee = request.data.get('total_fee')
-    application.payback = request.data.get('payback')
-    application.term = request.data.get('term')
-    application.frequency = request.data.get('frequency')
-    application.payment = request.data.get('payment')
-    application.net_funding_amount = request.data.get('net_funding_amount')
-
-
-    # Update other fields here
-
-    application.save()
-
-
-    # return JsonResponse({'success': 'true'})
-    return Response({"status": "success"}, status=status.HTTP_200_OK)
-
-
-class ApplicationUpdateView(generics.UpdateAPIView):
-    queryset = Application.objects.all()
-    serializer_class = ApplicationUpdateSerializer
-
-    def post(self, request, application_id):
-        try:
-            application = Application.objects.get(application_id=application_id)
-        except Application.DoesNotExist:
-            return Response({"error": "Application not found"}, status=status.HTTP_404_NOT_FOUND)
-            
-        status_name = request.data.get('status')
-        status_description = request.data.get('status_description')
-        if status_name:
-            status_obj, created = Status.objects.get_or_create(
-                name=status_name, description=status_description)
-            application.status = status_obj
-            application.save()
-
-        # Update other fields as necessary
-        application.name_of_business = request.data.get('name_of_business')
-        application.status_date = request.data.get('status_date')
-        application.advanced_price = request.data.get('advanced_price')
-        application.commission_price = request.data.get('commission_price')
-        application.percentage = request.data.get('percentage')
-        application.factor = request.data.get('factor')
-        application.total_fee = request.data.get('total_fee')
-        application.payback = request.data.get('payback')
-        application.term = request.data.get('term')
-        application.frequency = request.data.get('frequency')
-        application.payment = request.data.get('payment')
-        application.net_funding_amount = request.data.get('net_funding_amount')
-
-
-        # Update other fields here
-
-        application.save()
-
-        return Response({"message": "Application updated successfully"})
-
-    # def patch(self, request, *args, **kwargs):
-    #     instance = self.get_object()
-    #     serializer = self.get_serializer(
-    #         instance, data=request.data, partial=True)
-    #     serializer.is_valid(raise_exception=True)
-    #     application = serializer.save()
-
-    #     application.status = Status.objects.get_or_create(
-    #         name=request.data.get('status'))
-    #     application.save()
-
-    #     return Response(serializer.data)
+        return Response(status=status.HTTP_201_CREATED)
