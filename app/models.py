@@ -47,21 +47,26 @@ class Status(models.Model):
 
 
 class Application(models.Model):
+    count = models.IntegerField(default=0)
     application_id = models.CharField(
-        max_length=250, primary_key=True, default=generate_random_string)
+        max_length=250, primary_key=True, unique=True, default=generate_random_string)
     date_submitted = models.CharField(
         max_length=255, default="", null=True, blank=True)
-    status = models.ForeignKey(
-        Status, on_delete=models.PROTECT, related_name='applications', null=True, blank=True)
+    # status = models.ForeignKey(
+    #     Status, on_delete=models.PROTECT, related_name='applications', null=True, blank=True)
+    status = models.CharField(
+        max_length=255, default="Created", null=True, blank=True)
+    status_description = models.CharField(
+        max_length=255, default="Created", null=True, blank=True)
     status_date = models.CharField(
         max_length=255, default="", null=True, blank=True)
 
     owners = models.CharField(
         max_length=255, default="", null=True, blank=True)
     business_name_match_flag = models.CharField(
-        max_length=255, default="NAN")
+        max_length=255, default="")
     credit_score = models.CharField(
-        max_length=255, default="NAN")
+        max_length=255, default="")
 
     name_of_business = models.CharField(
         max_length=255, default="", null=True, blank=True)
@@ -151,6 +156,12 @@ class Application(models.Model):
         max_length=255, default="", null=True, blank=True)
     net_funding_amount = models.CharField(
         max_length=255, default="", null=True, blank=True)
+    dele = models.IntegerField(default=0)
+
+    def save(self, *args, **kwargs):
+        self.count += 1
+        self.dele += 1
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.name_of_business} - {self.status}"

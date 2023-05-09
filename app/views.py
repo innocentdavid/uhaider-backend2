@@ -50,10 +50,10 @@ class LoginView(views.APIView):
         user = CustomUser.objects.filter(email=email).first()
 
         if user is None:
-            raise exceptions.AuthenticationFailed('User not found!')
+            return Response({"message": "User not found"})
 
         if not user.check_password(password):
-            raise exceptions.AuthenticationFailed('Password incorrect')
+            return Response({"message": "Password incorrect"})
 
         payload = {
             'id': user.email,
@@ -80,28 +80,22 @@ class GetAuthUserView(views.APIView):
         try:
             payload = jwt.decode(token, 'secret', algorithms=["HS256"])
         except jwt.exceptions.DecodeError:
-            # raise exceptions.AuthenticationFailed('Unauthenticated!')
-            return Response({"message": "Unauthenticated!"}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({"message": "Unauthenticated!"})
         except jwt.exceptions.InvalidSignatureError:
-            # raise exceptions.AuthenticationFailed('Invalid signature!')
-            return Response({"message": "Invalid signature!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({"message": "Invalid signature!"})
         except jwt.exceptions.ExpiredSignatureError:
-            # raise exceptions.AuthenticationFailed('Signature has expired!')
-            return Response({"message": "Signature has expired!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({"message": "Signature has expired!"})
         except jwt.exceptions.DecodeError:
-            # raise exceptions.AuthenticationFailed('Invalid token!')
-            return Response({"message": "Invalid token!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({"message": "Invalid token!"})
         except:
-            # raise exceptions.AuthenticationFailed('Could not decode token!')
-            return Response({"message": "Could not decode token!"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
+            return Response({"message": "Could not decode token!"})
+            
         try:
-            user = CustomUser.objects.filter(email = 'cent@gmail.com').first()
+            user = CustomUser.objects.filter(email=payload['id']).first()
             serializer = UserSerializer(user)
-
             return Response(serializer.data, status=status.HTTP_200_OK)
         except: 
-            return Response({"error", "Unsuccessful!"}, status=status.HTTP_200_OK)
+            return Response({"error", "Unsuccessful!"})
 
 
 class LogoutView(views.APIView):
@@ -160,18 +154,26 @@ class PDdfsViewSet(viewsets.ModelViewSet):
         # print(request.data)
         pdf_type = request.data['pdf_type']
         application_id = request.data['application_id']
-
-        business_name = request.data['business_name']
-        bank_name = request.data['bank_name']
-        begin_bal_amount = request.data['begin_bal_amount']
-        begin_bal_date = request.data['begin_bal_date']
-        ending_bal_amount = request.data['ending_bal_amount']
-        ending_bal_date = request.data['ending_bal_date']
-        total_deposit = request.data['total_deposit']
-
         pdf_file = request.data['pdf_file']
 
-        # print(pdf_file)
+        business_name=""
+        bank_name=""
+        begin_bal_amount=""
+        begin_bal_date=""
+        ending_bal_amount=""
+        ending_bal_date=""
+        total_deposit=""
+
+        try:
+            business_name = request.data['business_name']
+            bank_name = request.data['bank_name']
+            total_deposit = request.data['total_deposit']
+            begin_bal_amount = request.data['begin_bal_amount']
+            begin_bal_date = request.data['begin_bal_date']
+            ending_bal_amount = request.data['ending_bal_amount']
+            ending_bal_date = request.data['ending_bal_date']
+        except:
+            pass
 
         pdfFile = PdfFile.objects.create(
             file=pdf_file,
@@ -184,10 +186,11 @@ class PDdfsViewSet(viewsets.ModelViewSet):
             ending_bal_date={ending_bal_date},
             total_deposit={total_deposit}
         )
-        pdfFile.save()
+        # pdfFile.save()
 
-        application = Application.objects.get(
-            application_id=application_id)
+        application = Application.objects.filter(
+            application_id=application_id).first()
+        print(application)
         pdfFile.application_id = application
         pdfFile.save()
         # print(pdfFile)
@@ -217,6 +220,21 @@ class PDdfsViewSet(viewsets.ModelViewSet):
 
         # return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
+def get_file(request, application_id, pdf_type):
+    pdf_file = get_object_or_404(PdfFile, application_id=application_id, pdf_type=pdf_type)
+    response = HttpResponse(pdf_file.file, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="{pdf_file.file.name}"'
+    return response
+    # file_path = os.path.join(settings.MEDIA_ROOT, 'pdf_files', filename)
+    # if os.path.exists(file_path):
+    #     with open(file_path, 'rb') as f:
+    #         file_content = f.read()
+    #     response = HttpResponse(file_content, content_type='application/pdf')
+    #     response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    #     return response
+    # else:
+    #     return HttpResponse('File not found', status=404)
 
 class MovieViewSet(viewsets.ModelViewSet):
     serializer_class = MovieSerializer
@@ -249,19 +267,9 @@ class ApplicationViewSet(viewsets.ModelViewSet):
 
         if serializer.is_valid():
             application = Application(**serializer.validated_data)
-            # application = serializer.save()
-            print("application: ")
-            print(application)
-
             application_id = application.application_id
-            print("application_id: ")
-            print(application_id)
-
-            application.status = Status.objects.get(name="Submitted")
             application.save()
 
-            # print(application)
-            # print(application.pk)
             response_data = serializer.data
             response_data['application_id'] = application_id
 
