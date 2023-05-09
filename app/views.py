@@ -155,6 +155,13 @@ class PDdfsViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         # print(request.data)
+        if not 'pdf_type' in request.data:
+            return Response({"message": "pdf_type is missing" },status=status.HTTP_400_BAD_REQUEST)
+        if not 'application_id' in request.data:
+            return Response({"message": "application_id is missing" },status=status.HTTP_400_BAD_REQUEST)
+        if not 'pdf_file' in request.data:
+            return Response({"message": "pdf_file is missing" },status=status.HTTP_400_BAD_REQUEST)
+
         pdf_type = request.data['pdf_type']
         application_id = request.data['application_id']
         pdf_file = request.data['pdf_file']
@@ -178,6 +185,12 @@ class PDdfsViewSet(viewsets.ModelViewSet):
         except:
             pass
 
+        application = Application.objects.filter(
+            application_id=application_id).first()
+        
+        if not application:
+            return Response({"message": "application not found"}, status=status.HTTP_404_NOT_FOUND)
+
         pdfFile = PdfFile.objects.create(
             file=pdf_file,
             pdf_type=pdf_type,
@@ -190,15 +203,14 @@ class PDdfsViewSet(viewsets.ModelViewSet):
             total_deposit={total_deposit}
         )
         # pdfFile.save()
-
-        application = Application.objects.filter(
-            application_id=application_id).first()
-        print(application)
         pdfFile.application_id = application
         pdfFile.save()
         # print(pdfFile)
 
         return Response(status=status.HTTP_201_CREATED)
+
+        
+        # print(application)
 
         # pdf_file = request.FILES.get('pdf_file')
         # title = request['title']
