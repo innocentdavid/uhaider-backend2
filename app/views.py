@@ -75,7 +75,8 @@ class GetAuthUserView(views.APIView):
     def get(self, request):
         token = request.COOKIES.get('jwt')
         if not token:
-            raise exceptions.AuthenticationFailed("Unauthenticated")
+            # raise exceptions.AuthenticationFailed("Unauthenticated")
+            return Response({"message": "Unauthenticated!"})
 
         try:
             payload = jwt.decode(token, 'secret', algorithms=["HS256"])
@@ -93,7 +94,9 @@ class GetAuthUserView(views.APIView):
         try:
             user = CustomUser.objects.filter(email=payload['id']).first()
             serializer = UserSerializer(user)
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            response_data = serializer.data
+            response_data['message'] = 'success'
+            return Response(response_data, status=status.HTTP_200_OK)
         except: 
             return Response({"error", "Unsuccessful!"})
 
