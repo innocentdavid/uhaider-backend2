@@ -295,9 +295,9 @@ class SubmittedApplication(models.Model):
     net_funding_amount = models.CharField(
         max_length=255, default="", blank=True)
 
-    def save(self, *args, **kwargs):
-        self.count += 1
-        super().save(*args, **kwargs)
+    # def save(self, *args, **kwargs):
+    #     self.count += 1
+    #     super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.name_of_business} - {self.status}"
