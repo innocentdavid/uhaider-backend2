@@ -6,13 +6,17 @@ from django.conf.urls.static import static
 
 router = routers.DefaultRouter()
 router.register(r'applications', ApplicationViewSet)
+router.register(r'submittedApplications', SubmittedApplicationViewSet)
 router.register(r'status', StatusViewSet)
+router.register(r'funders', FunderViewSet)
 router.register(r'pdfs', PDdfsViewSet)
 # router.register(r'user', UserViewSet)
 # router.register(r'movies', MovieViewSet, basename='movie')
 
 urlpatterns = [
     path('', include(router.urls)),
+    path('api/submittedApplications/<str:application_id>/',
+         get_submitted_applications, name='get_submitted_applications'),
     path('api/applications/<str:application_id>/pdfs/',
          get_application_pdfs, name='get_application_pdfs'),
     path('get_file/<str:application_id>/<str:pdf_type>/',

@@ -28,6 +28,12 @@ class StatusSerializer(serializers.ModelSerializer):
         model = Status
         fields = '__all__'
 
+
+class FunderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Funder
+        fields = '__all__'
+
 class ApplicationPDFsSerializer(serializers.ModelSerializer):
     class Meta:
         model = ApplicationPDFs
@@ -46,7 +52,15 @@ class ApplicationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Application
         fields = "__all__"
-        # depth = 1
+        
+
+class SubmittedApplicationSerializer(serializers.ModelSerializer):
+    # status_description = serializers.CharField(source='status.description', read_only=True)
+
+    class Meta:
+        model = SubmittedApplication
+        fields = "__all__"
+        depth = 1
 
 
 class ApplicationUpdateSerializer(serializers.ModelSerializer):
