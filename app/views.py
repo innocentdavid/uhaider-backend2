@@ -298,7 +298,8 @@ class ApplicationViewSet(viewsets.ModelViewSet):
     # parser_classes = [parsers.MultiPartParser, parsers.FormParser]
 
     def create(self, request, *args, **kwargs):
-        # print(request.data)
+        print("request.data: ")
+        print(request.data)
         serializer = ApplicationSerializer(data=request.data)
         # print(serializer)
         print(serializer.is_valid())
@@ -309,6 +310,8 @@ class ApplicationViewSet(viewsets.ModelViewSet):
             application.save()
 
             response_data = serializer.data
+            print("response_data: ")
+            print(response_data)
             response_data['application_id'] = application_id
 
             return Response(response_data, status=status.HTTP_201_CREATED)
