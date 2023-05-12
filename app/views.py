@@ -24,7 +24,7 @@ class RegisterView(views.APIView):
 
         payload = {
             'id': user.email,
-            'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=60),
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=24),
             'iat': datetime.datetime.utcnow()
         }
 
@@ -58,7 +58,7 @@ class LoginView(views.APIView):
 
         payload = {
             'id': user.email,
-            'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=60),
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=24),
             'iat': datetime.datetime.utcnow()
         }
 
@@ -138,14 +138,8 @@ def get_application_pdfs(request, application_id):
             'ending_bal_date': pdf.ending_bal_date,
             'ending_bal_amount': pdf.ending_bal_amount
         })
-    # print(pdf_data)
-
+    
     return JsonResponse({'pdfs': pdf_data})
-
-
-class StatusViewSet(viewsets.ModelViewSet):
-    serializer_class = StatusSerializer
-    queryset = Status.objects.all()
 
 
 class FunderViewSet(viewsets.ModelViewSet):
@@ -159,7 +153,6 @@ class PDdfsViewSet(viewsets.ModelViewSet):
     parser_classes = (parsers.MultiPartParser, parsers.FormParser)
 
     def create(self, request, *args, **kwargs):
-        # print(request.data)
         if not 'pdf_type' in request.data:
             return Response({"message": "pdf_type is missing"}, status=status.HTTP_400_BAD_REQUEST)
         if not 'application_id' in request.data:
@@ -199,47 +192,20 @@ class PDdfsViewSet(viewsets.ModelViewSet):
         pdfFile = PdfFile.objects.create(
             file=pdf_file,
             pdf_type=pdf_type,
-            business_name={business_name},
-            bank_name={bank_name},
-            begin_bal_amount={begin_bal_amount},
-            begin_bal_date={begin_bal_date},
-            ending_bal_amount={ending_bal_amount},
-            ending_bal_date={ending_bal_date},
-            total_deposit={total_deposit}
+            business_name=business_name,
+            bank_name=bank_name,
+            begin_bal_amount=begin_bal_amount,
+            begin_bal_date=begin_bal_date,
+            ending_bal_amount=ending_bal_amount,
+            ending_bal_date=ending_bal_date,
+            total_deposit=total_deposit,
         )
-        # pdfFile.save()
         pdfFile.application_id = application
         pdfFile.save()
-        # print(pdfFile)
 
         return Response(status=status.HTTP_201_CREATED)
 
-        # print(application)
-
-        # pdf_file = request.FILES.get('pdf_file')
-        # title = request['title']
-        # application_id = request['application_id']
-        # beginning_balance_amount = request['beginning_balance_amount']
-
-        # applicationPDFs = ApplicationPDFs.objects.create(
-        #     file=pdf_file,
-        #     pdf_type=title,
-        #     beginning_balance_amount=beginning_balance_amount
-        # )
-        # applicationPDFs.application = Application.objects.get(
-        #     application_id=application_id)
-        # applicationPDFs.save()
-
-        # if applicationPDFs:
-        #     return Response(serializer.data, application_id=application.application_id, status=status.HTTP_201_CREATED)
-
-        # return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-        #     return Response(serializer.data, application_id=application.application_id, status=status.HTTP_201_CREATED)
-
-        # return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
+       
 def get_file(request, application_id, pdf_type):
     pdf_file = get_object_or_404(
         PdfFile, application_id=application_id, pdf_type=pdf_type)
@@ -274,46 +240,21 @@ def get_submitted_applications(request, application_id):
     return JsonResponse(serialized_application.data, safe=False, status=status.HTTP_200_OK)
 
 
-class MovieViewSet(viewsets.ModelViewSet):
-    serializer_class = MovieSerializer
-    queryset = Movie.objects.all()
-
-    def create(self, request, *args, **kwargs):
-        # print(request.data)
-        serializer = MovieSerializer(data=request.data)
-
-        if serializer.is_valid():
-            # Save the application object
-            movie = serializer.save()
-            # print(movie)
-
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
 class ApplicationViewSet(viewsets.ModelViewSet):
     queryset = Application.objects.all()
     serializer_class = ApplicationSerializer
-    # parser_classes = [parsers.MultiPartParser, parsers.FormParser]
 
     def create(self, request, *args, **kwargs):
-        print("request.data: ")
-        print(request.data)
         serializer = ApplicationSerializer(data=request.data)
-        # print(serializer)
-        print(serializer.is_valid())
-
         if serializer.is_valid():
             application = Application(**serializer.validated_data)
             application_id = application.application_id
+            total_count = Application.objects.count()
+            application.count = total_count+1
             application.save()
 
             response_data = serializer.data
-            print("response_data: ")
-            print(response_data)
             response_data['application_id'] = application_id
-
             return Response(response_data, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -333,32 +274,27 @@ class SubmittedApplicationViewSet(viewsets.ModelViewSet):
     # parser_classes = [parsers.MultiPartParser, parsers.FormParser]
 
     def create(self, request, *args, **kwargs):
-        # print(request.data)
         serializer = SubmittedApplicationSerializer(data=request.data)
-        # print(serializer)
-        print(serializer.is_valid())
 
         if serializer.is_valid():
             if not 'funder_names' in request.data:
-                return Response({"message": "funder not selected"}, status=status.HTTP_201_CREATED)
+                return Response({"message": "funder not selected"}, status=status.HTTP_400_BAD_REQUEST)
             funder_names = request.data['funder_names']
-            print(funder_names)
             for funder_name in funder_names:
                 funder = Funder.objects.filter(
                     name=funder_name['name']).first()
-                if funder:
-                    submittedApplication = SubmittedApplication(
-                        **serializer.validated_data)
-                    submittedApplication.funder = funder
-                    submittedApplication.save()
-                    submittedApplication_id = submittedApplication.application_id
+                if not funder:
+                    return Response({"message": "funder not found"}, status=status.HTTP_404_NOT_FOUND)
+                submittedApplication = SubmittedApplication(
+                    **serializer.validated_data)
+                submittedApplication.funder = funder
+                submittedApplication.save()
+                submittedApplication_id = submittedApplication.application_id
 
-                    response_data = serializer.data
-                    response_data['submittedApplication_id'] = submittedApplication_id
+                response_data = serializer.data
+                response_data['submittedApplication_id'] = submittedApplication_id
 
-                    return Response(response_data, status=status.HTTP_201_CREATED)
-
-                return Response({"message": "funder not found"}, status=status.HTTP_404_NOT_FOUND)
+            return Response(response_data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def update(self, request, *args, **kwargs):

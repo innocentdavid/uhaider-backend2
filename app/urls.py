@@ -7,11 +7,8 @@ from django.conf.urls.static import static
 router = routers.DefaultRouter()
 router.register(r'applications', ApplicationViewSet)
 router.register(r'submittedApplications', SubmittedApplicationViewSet)
-router.register(r'status', StatusViewSet)
 router.register(r'funders', FunderViewSet)
 router.register(r'pdfs', PDdfsViewSet)
-# router.register(r'user', UserViewSet)
-# router.register(r'movies', MovieViewSet, basename='movie')
 
 urlpatterns = [
     path('', include(router.urls)),

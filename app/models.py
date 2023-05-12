@@ -1,6 +1,8 @@
 from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import AbstractUser, Group, Permission
+# from django.db.models.signals import pre_save
+# from django.dispatch import receiver
 # from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.translation import gettext_lazy as _
 import random
@@ -21,31 +23,6 @@ def generate_random_string(length=6):
     """Generate a random alphanumeric string of specified length."""
     characters = string.ascii_letters + string.digits
     return ''.join(random.choice(characters) for _ in range(length))
-
-
-class Movie(models.Model):
-    movie_id = models.CharField(
-        max_length=250, default=generate_random_string)
-    name = models.CharField(max_length=250, default="", blank=True)
-    genre = models.CharField(
-        max_length=2550, default="", blank=True)
-    starring = models.CharField(
-        max_length=350, default="", blank=True)
-    users_cash_advance = models.CharField(
-        max_length=255, default="", blank=True)
-
-    def __str__(self):
-        return self.name
-
-
-class Status(models.Model):
-    name = models.CharField(max_length=255, primary_key=True,
-                            default="Submited", blank=False)
-    description = models.CharField(
-        max_length=255, default="", blank=True)
-
-    def __str__(self):
-        return self.name
 
 
 class Funder(models.Model):
@@ -170,15 +147,26 @@ class Application(models.Model):
         max_length=255, default="", blank=True)
     net_funding_amount = models.CharField(
         max_length=255, default="", blank=True)
-    dele = models.IntegerField(default=0)
 
-    def save(self, *args, **kwargs):
-        self.count += 1
-        self.dele += 1
-        super().save(*args, **kwargs)
+    # def save(self, *args, **kwargs):
+    #     self.count += 1
+    #     super().save(*args, **kwargs)
+
+    # def save(self, *args, **kwargs):
+    #     # If this is a new instance, increment the count field
+    #     if not self.pk:
+    #         self.count = MyModel.objects.count() + 1
+
+    #     super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.name_of_business} - {self.status}"
+
+
+# @receiver(pre_save, sender=Application)
+# def increment_count(sender, instance, **kwargs):
+#     if not instance.pk:
+#         instance.count = Application.objects.count() + 1
 
 
 class SubmittedApplication(models.Model):
@@ -301,33 +289,6 @@ class SubmittedApplication(models.Model):
 
     def __str__(self):
         return f"{self.name_of_business} - {self.status}"
-
-
-class ApplicationPDFs(models.Model):
-    application = models.ForeignKey(
-        Application, on_delete=models.CASCADE, related_name="applicationPDFs")
-    file = models.FileField(upload_to='pdf_files/')
-    # file = models.BinaryField()
-    pdf_type = models.CharField(
-        max_length=255, default="", blank=True)
-
-    business_name = models.CharField(
-        max_length=255, default="", blank=True)
-    bank_name = models.CharField(
-        max_length=255, default="", blank=True)
-    begin_bal_date = models.CharField(
-        max_length=255, default="", blank=True)
-    begin_bal_amount = models.CharField(
-        max_length=255, default="", blank=True)
-    total_deposit = models.CharField(
-        max_length=255, default="", blank=True)
-    ending_bal_date = models.CharField(
-        max_length=255, default="", blank=True)
-    ending_bal_amount = models.CharField(
-        max_length=255, default="", blank=True)
-
-    def __str__(self):
-        return f'{self.business_name} ({self.file.name})'
 
 
 class PdfFile(models.Model):

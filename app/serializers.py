@@ -17,26 +17,9 @@ class UserSerializer(serializers.ModelSerializer):
         return instance
 
 
-class MovieSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Movie
-        fields = '__all__'
-
-
-class StatusSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Status
-        fields = '__all__'
-
-
 class FunderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Funder
-        fields = '__all__'
-
-class ApplicationPDFsSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ApplicationPDFs
         fields = '__all__'
 
 

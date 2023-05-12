@@ -12,6 +12,7 @@ media
 pdf_files/
 
 /migrations/
+migrations/
 
 # If you are using PyCharm # 
 # User-specific stuff
