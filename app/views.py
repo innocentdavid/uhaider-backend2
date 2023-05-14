@@ -6,6 +6,7 @@ from rest_framework import viewsets, parsers, generics, views
 from rest_framework import status, exceptions
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
+from rest_framework.permissions import BasePermission
 from django.http import HttpResponse
 from .models import *
 from .serializers import *
@@ -16,6 +17,35 @@ from django.views.decorators.csrf import csrf_exempt
 import jwt
 import datetime
 from django.db.models import Sum
+
+
+def has_permission_b(request):
+    token = request.COOKIES.get('jwt', None)
+    if not token:
+        auth_header = request.META.get('HTTP_AUTHORIZATION')
+        if auth_header is not None and auth_header.startswith('Bearer '):
+            if auth_header[7:] != 'undefined':
+                token = auth_header[7:]
+
+    if token is None:
+        return False
+    return True
+        
+
+class HasTokenCookiePermission(BasePermission):
+    def has_permission(self, request, view):
+        return has_permission_b(request=request)
+        # token = request.COOKIES.get('jwt', None)
+        # if not token:
+        #     auth_header = request.META.get('HTTP_AUTHORIZATION')
+        #     if auth_header is not None and auth_header.startswith('Bearer '):
+        #         print(auth_header)
+        #         if auth_header[7:] != 'undefined':
+        #             token = auth_header[7:]
+                    
+        # if token is None:
+        #     return False
+        # return True
 
 
 class RegisterView(views.APIView):
@@ -77,6 +107,7 @@ class LoginView(views.APIView):
 class GetAuthUserView(views.APIView):
     def get(self, request):
         token = request.COOKIES.get('jwt')
+        # print(token)
         if token is None:
             return Response({"message": "Unauthenticated!"})
         try:
@@ -103,7 +134,7 @@ class GetAuthUserView(views.APIView):
 
 
 class LogoutView(views.APIView):
-    def post(self, request):        
+    def post(self, request):
         response = HttpResponse()
         response.delete_cookie('jwt')
         response.set_cookie('jwt', '', expires=0, httponly=False)
@@ -114,6 +145,10 @@ class LogoutView(views.APIView):
 
 
 def get_application_pdfs(request, application_id):
+    permission_classes = has_permission_b(request=request)
+    if not permission_classes:
+        return JsonResponse({"message": "Unauthorized!"}, status=status.HTTP_401_UNAUTHORIZED)
+        
     try:
         application = Application.objects.get(application_id=application_id)
     except Application.DoesNotExist:
@@ -139,18 +174,20 @@ def get_application_pdfs(request, application_id):
             'ending_bal_date': pdf.ending_bal_date,
             'ending_bal_amount': pdf.ending_bal_amount
         })
-    
+
     return JsonResponse({'pdfs': pdf_data})
 
 
 class FunderViewSet(viewsets.ModelViewSet):
     serializer_class = FunderSerializer
     queryset = Funder.objects.all()
+    permission_classes = [HasTokenCookiePermission]
 
 
 class PDdfsViewSet(viewsets.ModelViewSet):
     serializer_class = PdfFileSerializer
     queryset = PdfFile.objects.all()
+    permission_classes = [HasTokenCookiePermission]
     parser_classes = (parsers.MultiPartParser, parsers.FormParser)
 
     def create(self, request, *args, **kwargs):
@@ -206,8 +243,13 @@ class PDdfsViewSet(viewsets.ModelViewSet):
 
         return Response(status=status.HTTP_201_CREATED)
 
-       
+
 def get_file(request, application_id, pdf_type):
+    permission_classes = has_permission_b(request=request)
+    if not permission_classes:
+        response_text = 'Unauthorized!'
+        return HttpResponse(response_text, status=status.HTTP_401_UNAUTHORIZED)
+        
     pdf_file = get_object_or_404(
         PdfFile, application_id=application_id, pdf_type=pdf_type)
     response = HttpResponse(pdf_file.file, content_type='application/pdf')
@@ -225,6 +267,10 @@ def get_file(request, application_id, pdf_type):
 
 
 def get_submitted_applications(request, application_id):
+    permission_classes = has_permission_b(request=request)
+    if not permission_classes:
+        return JsonResponse({"message": "Unauthorized!"}, status=status.HTTP_401_UNAUTHORIZED)
+        
     submitted_applications = SubmittedApplication.objects.filter(
         application_id=application_id)
 
@@ -237,6 +283,7 @@ def get_submitted_applications(request, application_id):
 class ApplicationViewSet(viewsets.ModelViewSet):
     queryset = Application.objects.all()
     serializer_class = ApplicationSerializer
+    permission_classes = [HasTokenCookiePermission]
 
     def create(self, request, *args, **kwargs):
         serializer = ApplicationSerializer(data=request.data)
@@ -266,7 +313,7 @@ class ApplicationViewSet(viewsets.ModelViewSet):
 class SubmittedApplicationViewSet(viewsets.ModelViewSet):
     queryset = SubmittedApplication.objects.all()
     serializer_class = SubmittedApplicationSerializer
-    # parser_classes = [parsers.MultiPartParser, parsers.FormParser]
+    permission_classes = [HasTokenCookiePermission]
 
     def create(self, request, *args, **kwargs):
         serializer = SubmittedApplicationSerializer(data=request.data)
@@ -301,22 +348,43 @@ class SubmittedApplicationViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_201_CREATED)
 
 
-def get_application_stats(status_substring):
+def get_application_stats(status_substring):    
     all_apps = SubmittedApplication.objects.filter(
         status__icontains=status_substring)
     app_count = all_apps.count()
-    app_sum = all_apps.aggregate(Sum('advanced_price'))['advanced_price__sum'] or 0
+    app_sum = all_apps.aggregate(Sum('advanced_price'))[
+        'advanced_price__sum'] or 0
     return {'count': app_count, 'sum': app_sum}
-    
+
+
 def get_starts(request):
-    # all_created_apps = Application.objects.filter(status__icontains='created')
-    # all_created_apps_count = all_created_apps.count()
-    # created_total = sum(int(app.advanced_price) for app in all_created_apps)
-    # created = {'count': all_created_apps_count, "total": created_total}
-    
+    permission_classes = has_permission_b(request=request)
+    if not permission_classes:
+        return JsonResponse({"message": "Unauthorized!"}, status=status.HTTP_401_UNAUTHORIZED)
+        
     response_data = {}
-    status_list = ['created', 'awaiting', 'submitted',
-                   'approved', 'funded', 'declined', 'commission']
+    all_approved_apps = SubmittedApplication.objects.filter(
+        status__icontains='approved')
+    app_count = all_approved_apps.count()
+    app_sum = all_approved_apps.aggregate(Sum('payment'))[
+        'payment__sum'] or 0
+    commission_price_from_all_approved_apps_sum = all_approved_apps.aggregate(Sum('commission_price'))[
+        'commission_price__sum'] or 0
+    approved = {'count': app_count, 'sum': app_sum}
+
+    try:
+        percentage = round(
+            (app_sum / commission_price_from_all_approved_apps_sum)*100, 2)
+    except:
+        percentage = 0
+
+    commission = {'count': app_count,
+                  'sum': commission_price_from_all_approved_apps_sum, 'percentage': percentage}
+
+    response_data['approved'] = approved
+    response_data['commission'] = commission
+
+    status_list = ['awaiting', 'submitted', 'declined', 'funded']
     for status_str in status_list:
         response_data[status_str] = get_application_stats(status_str)
     return JsonResponse(response_data, safe=False, status=status.HTTP_200_OK)

@@ -22,8 +22,8 @@ urlpatterns = [
          get_file, name="get_file"),
     path('api/register/', RegisterView.as_view(), name='register'),
     path('api/login/', LoginView.as_view(), name='login'),
-    path('api/getcurrentuser/', GetAuthUserView.as_view(), name='getcurrentuser'),
     path('api/logout/', LogoutView.as_view(), name='getAuthUserView'),
+    path('api/getcurrentuser/', GetAuthUserView.as_view(), name='getcurrentuser'),
 ]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 # urlpatterns = router.urls
