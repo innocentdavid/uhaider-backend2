@@ -127,26 +127,17 @@ class Application(models.Model):
     description_of_business = models.CharField(
         max_length=255, default="", blank=True)
 
-    advanced_price = models.CharField(
-        max_length=255, default="", blank=True)
-    commission_price = models.CharField(
-        max_length=255, default="", blank=True)
-    percentage = models.CharField(
-        max_length=255, default="", blank=True)
-    factor = models.CharField(
-        max_length=255, default="", blank=True)
-    total_fee = models.CharField(
-        max_length=255, default="", blank=True)
-    payback = models.CharField(
-        max_length=255, default="", blank=True)
+    advanced_price = models.IntegerField(default=0)
+    commission_price = models.IntegerField(default=0)
+    percentage = models.IntegerField(default=0)
+    factor = models.IntegerField(default=0)
+    total_fee = models.IntegerField(default=0)
+    payback = models.IntegerField(default=0)
     term = models.CharField(
         max_length=255, default="", blank=True)
-    frequency = models.CharField(
-        max_length=255, default="", blank=True)
-    payment = models.CharField(
-        max_length=255, default="", blank=True)
-    net_funding_amount = models.CharField(
-        max_length=255, default="", blank=True)
+    frequency = models.IntegerField(default=0)
+    payment = models.IntegerField(default=0)
+    net_funding_amount = models.IntegerField(default=0)
 
     # def save(self, *args, **kwargs):
     #     self.count += 1
@@ -161,12 +152,6 @@ class Application(models.Model):
 
     def __str__(self):
         return f"{self.name_of_business} - {self.status}"
-
-
-# @receiver(pre_save, sender=Application)
-# def increment_count(sender, instance, **kwargs):
-#     if not instance.pk:
-#         instance.count = Application.objects.count() + 1
 
 
 class SubmittedApplication(models.Model):
@@ -262,26 +247,17 @@ class SubmittedApplication(models.Model):
     description_of_business = models.CharField(
         max_length=255, default="", blank=True)
 
-    advanced_price = models.CharField(
-        max_length=255, default="", blank=True)
-    commission_price = models.CharField(
-        max_length=255, default="", blank=True)
-    percentage = models.CharField(
-        max_length=255, default="", blank=True)
-    factor = models.CharField(
-        max_length=255, default="", blank=True)
-    total_fee = models.CharField(
-        max_length=255, default="", blank=True)
-    payback = models.CharField(
-        max_length=255, default="", blank=True)
+    advanced_price = models.IntegerField(default=0)
+    commission_price = models.IntegerField(default=0)
+    percentage = models.IntegerField(default=0)
+    factor = models.IntegerField(default=0)
+    total_fee = models.IntegerField(default=0)
+    payback = models.IntegerField(default=0)
     term = models.CharField(
         max_length=255, default="", blank=True)
-    frequency = models.CharField(
-        max_length=255, default="", blank=True)
-    payment = models.CharField(
-        max_length=255, default="", blank=True)
-    net_funding_amount = models.CharField(
-        max_length=255, default="", blank=True)
+    frequency = models.IntegerField(default=0)
+    payment = models.IntegerField(default=0)
+    net_funding_amount = models.IntegerField(default=0)
 
     # def save(self, *args, **kwargs):
     #     self.count += 1

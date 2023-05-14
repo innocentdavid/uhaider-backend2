@@ -6,6 +6,7 @@ from rest_framework import viewsets, parsers, generics, views
 from rest_framework import status, exceptions
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
+from django.http import HttpResponse
 from .models import *
 from .serializers import *
 import base64
@@ -14,6 +15,7 @@ import PyPDF2
 from django.views.decorators.csrf import csrf_exempt
 import jwt
 import datetime
+from django.db.models import Sum
 
 
 class RegisterView(views.APIView):
@@ -31,7 +33,7 @@ class RegisterView(views.APIView):
         token = jwt.encode(payload, 'secret', algorithm='HS256')
         #    .decode('utf-8')
         response = Response()
-        response.set_cookie(key="jwt", value=token, httponly=True)
+        response.set_cookie(key="jwt", value=token, httponly=False)
 
         response_data = serializer.data
         # response_data['jwt'] = token
@@ -65,7 +67,7 @@ class LoginView(views.APIView):
         token = jwt.encode(payload, 'secret', algorithm='HS256')
         # .decode('utf-8')
         response = Response()
-        response.set_cookie(key="jwt", value=token, httponly=True)
+        response.set_cookie(key="jwt", value=token, httponly=False)
         response.data = {"message": 'success'}
         return response
 
@@ -75,10 +77,8 @@ class LoginView(views.APIView):
 class GetAuthUserView(views.APIView):
     def get(self, request):
         token = request.COOKIES.get('jwt')
-        if not token:
-            # raise exceptions.AuthenticationFailed("Unauthenticated")
+        if token is None:
             return Response({"message": "Unauthenticated!"})
-
         try:
             payload = jwt.decode(token, 'secret', algorithms=["HS256"])
         except jwt.exceptions.DecodeError:
@@ -99,13 +99,14 @@ class GetAuthUserView(views.APIView):
             response_data['message'] = 'success'
             return Response(response_data, status=status.HTTP_200_OK)
         except:
-            return Response({"error", "Unsuccessful!"})
+            return Response({"message", "Unsuccessful!"})
 
 
 class LogoutView(views.APIView):
-    def post(self, request):
-        response = Response()
+    def post(self, request):        
+        response = HttpResponse()
         response.delete_cookie('jwt')
+        response.set_cookie('jwt', '', expires=0, httponly=False)
         response.data = {
             'message': 'success'
         }
@@ -224,13 +225,6 @@ def get_file(request, application_id, pdf_type):
 
 
 def get_submitted_applications(request, application_id):
-    # try:
-    #     # submitted_application = get_object_or_404(
-    #     #     SubmittedApplication, application_id=application_id)
-
-    # except SubmittedApplication.DoesNotExist:
-    #     return Response({'error': 'Submitted application not found.'}, status=status.HTTP_404_NOT_FOUND)
-
     submitted_applications = SubmittedApplication.objects.filter(
         application_id=application_id)
 
@@ -246,6 +240,7 @@ class ApplicationViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         serializer = ApplicationSerializer(data=request.data)
+        # print(serializer.is_valid())
         if serializer.is_valid():
             application = Application(**serializer.validated_data)
             application_id = application.application_id
@@ -304,3 +299,24 @@ class SubmittedApplicationViewSet(viewsets.ModelViewSet):
         self.perform_update(serializer)
 
         return Response(status=status.HTTP_201_CREATED)
+
+
+def get_application_stats(status_substring):
+    all_apps = SubmittedApplication.objects.filter(
+        status__icontains=status_substring)
+    app_count = all_apps.count()
+    app_sum = all_apps.aggregate(Sum('advanced_price'))['advanced_price__sum'] or 0
+    return {'count': app_count, 'sum': app_sum}
+    
+def get_starts(request):
+    # all_created_apps = Application.objects.filter(status__icontains='created')
+    # all_created_apps_count = all_created_apps.count()
+    # created_total = sum(int(app.advanced_price) for app in all_created_apps)
+    # created = {'count': all_created_apps_count, "total": created_total}
+    
+    response_data = {}
+    status_list = ['created', 'awaiting', 'submitted',
+                   'approved', 'funded', 'declined', 'commission']
+    for status_str in status_list:
+        response_data[status_str] = get_application_stats(status_str)
+    return JsonResponse(response_data, safe=False, status=status.HTTP_200_OK)
