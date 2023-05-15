@@ -19,6 +19,17 @@ class TokenAuthenticationMiddleware:
                     token = auth_header[7:]
             except:
                 token = None
+        if token is not None:
+            try:
+                payload = jwt.decode(token, 'secret', algorithms=["HS256"])
+            except jwt.exceptions.InvalidSignatureError:
+                return HttpResponse('Invalid signature!', status=403)
+            except jwt.exceptions.ExpiredSignatureError:
+                return HttpResponse('Signature has expired!', status=403)
+            except jwt.exceptions.DecodeError:
+                return HttpResponse('Invalid token!', status=403)
+            except:
+                return HttpResponse('Unauthenticated!', status=403)
 
         # if token is None:
         #     return False

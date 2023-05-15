@@ -29,6 +29,16 @@ def has_permission_b(request):
 
     if token is None:
         return False
+    try:
+        payload = jwt.decode(token, 'secret', algorithms=["HS256"])
+    except jwt.exceptions.DecodeError:
+        return False
+    except jwt.exceptions.InvalidSignatureError:
+        return False
+    except jwt.exceptions.ExpiredSignatureError:
+        return False
+    except:
+        return False
     return True
         
 
@@ -112,8 +122,6 @@ class GetAuthUserView(views.APIView):
             return Response({"message": "Unauthenticated!"})
         try:
             payload = jwt.decode(token, 'secret', algorithms=["HS256"])
-        except jwt.exceptions.DecodeError:
-            return Response({"message": "Unauthenticated!"})
         except jwt.exceptions.InvalidSignatureError:
             return Response({"message": "Invalid signature!"})
         except jwt.exceptions.ExpiredSignatureError:
@@ -121,7 +129,7 @@ class GetAuthUserView(views.APIView):
         except jwt.exceptions.DecodeError:
             return Response({"message": "Invalid token!"})
         except:
-            return Response({"message": "Could not decode token!"})
+            return Response({"message": "Unauthenticated!"})
 
         try:
             user = CustomUser.objects.filter(email=payload['id']).first()
