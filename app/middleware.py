@@ -1,5 +1,5 @@
 from django.http import HttpResponse
-
+import jwt
 
 class TokenAuthenticationMiddleware:
     EXCLUDED_VIEWS = ['register', 'login']
