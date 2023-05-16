@@ -1,3 +1,7 @@
+from django.conf import settings
+from datetime import datetime, timedelta
+from django.contrib.auth import authenticate
+from rest_framework import views, status
 from django.shortcuts import get_object_or_404
 # from django.shortcuts import render
 from django.http import JsonResponse
@@ -20,26 +24,27 @@ from django.db.models import Sum
 
 
 def has_permission_b(request):
-    token = request.COOKIES.get('jwt', None)
-    if not token:
-        auth_header = request.META.get('HTTP_AUTHORIZATION')
-        if auth_header is not None and auth_header.startswith('Bearer '):
-            if auth_header[7:] != 'undefined':
-                token = auth_header[7:]
-
-    if token is None:
-        return False
-    try:
-        payload = jwt.decode(token, 'secret', algorithms=["HS256"])
-    except jwt.exceptions.DecodeError:
-        return False
-    except jwt.exceptions.InvalidSignatureError:
-        return False
-    except jwt.exceptions.ExpiredSignatureError:
-        return False
-    except:
-        return False
     return True
+    # token = request.COOKIES.get('jwt', None)
+    # if not token:
+    #     auth_header = request.META.get('HTTP_AUTHORIZATION')
+    #     if auth_header is not None and auth_header.startswith('Bearer '):
+    #         if auth_header[7:] != 'undefined':
+    #             token = auth_header[7:]
+
+    # if token is None:
+    #     return False
+    # try:
+    #     payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+    # except jwt.exceptions.DecodeError:
+    #     return False
+    # except jwt.exceptions.InvalidSignatureError:
+    #     return False
+    # except jwt.exceptions.ExpiredSignatureError:
+    #     return False
+    # except:
+    #     return False
+    # return True
         
 
 class HasTokenCookiePermission(BasePermission):
@@ -67,13 +72,12 @@ class RegisterView(views.APIView):
         payload = {
             'id': user.email,
             'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=24),
-            'iat': datetime.datetime.utcnow()
         }
 
-        token = jwt.encode(payload, 'secret', algorithm='HS256')
+        token = jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
         #    .decode('utf-8')
         response = Response()
-        response.set_cookie(key="jwt", value=token, httponly=False)
+        response.set_cookie(key="jwt", value=token, httponly=True)
 
         response_data = serializer.data
         # response_data['jwt'] = token
@@ -87,31 +91,66 @@ class RegisterView(views.APIView):
 
 class LoginView(views.APIView):
     def post(self, request):
-        email = request.data['email']
-        password = request.data['password']
+        email = request.data.get('email')
+        password = request.data.get('password')
 
-        user = CustomUser.objects.filter(email=email).first()
+        if not email or not password:
+            return Response({'message': 'Please provide both email and password.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = authenticate(request, email=email, password=password)
 
         if user is None:
-            return Response({"message": "User not found"})
+            return Response({'message': 'Invalid credentials.'}, status=status.HTTP_401_UNAUTHORIZED)
 
-        if not user.check_password(password):
-            return Response({"message": "Password incorrect"})
-
-        payload = {
+        # Generate JWT token
+        token_payload = {
+            # 'id': user.id,
+            # 'email': user.email,
             'id': user.email,
-            'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=24),
+            'exp': datetime.datetime.utcnow() + timedelta(days=1),
             'iat': datetime.datetime.utcnow()
         }
 
-        token = jwt.encode(payload, 'secret', algorithm='HS256')
-        # .decode('utf-8')
-        response = Response()
-        response.set_cookie(key="jwt", value=token, httponly=False)
-        response.data = {"message": 'success'}
+        token = jwt.encode(
+            token_payload, settings.SECRET_KEY, algorithm='HS256')
+
+        response = Response({'message': 'Login successful.'},
+                            status=status.HTTP_200_OK)
+        response.set_cookie(key='jwt', value=token, httponly=True,
+                            secure=settings.SESSION_COOKIE_SECURE, samesite='Strict')
+        print('response: ')
+        print(response)
+
         return response
 
-        # return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+# class LoginView(views.APIView):
+#     def post(self, request):
+#         email = request.data['email']
+#         password = request.data['password']
+
+#         user = CustomUser.objects.filter(email=email).first()
+
+#         if user is None:
+#             return Response({"message": "User not found"})
+
+#         if not user.check_password(password):
+#             return Response({"message": "Password incorrect"})
+
+#         payload = {
+#             'id': user.email,
+#             'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=24),
+#             'iat': datetime.datetime.utcnow()
+#         }
+
+#         token = jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
+#         # .decode('utf-8')
+#         response = Response()
+#         response.set_cookie(key="jwt", value=token, httponly=True)
+#         response.data = {"message": 'success'}
+#         return response
+
+#         # return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 class GetAuthUserView(views.APIView):
@@ -121,7 +160,7 @@ class GetAuthUserView(views.APIView):
         if token is None:
             return Response({"message": "Unauthenticated!"})
         try:
-            payload = jwt.decode(token, 'secret', algorithms=["HS256"])
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
         except jwt.exceptions.InvalidSignatureError:
             return Response({"message": "Invalid signature!"})
         except jwt.exceptions.ExpiredSignatureError:
@@ -144,8 +183,8 @@ class GetAuthUserView(views.APIView):
 class LogoutView(views.APIView):
     def post(self, request):
         response = HttpResponse()
-        response.delete_cookie('jwt')
-        response.set_cookie('jwt', '', expires=0, httponly=False)
+        # response.delete_cookie('jwt')
+        response.set_cookie('jwt', '', expires=0, httponly=True)
         response.data = {
             'message': 'success'
         }

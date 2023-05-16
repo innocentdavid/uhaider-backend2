@@ -3,6 +3,7 @@ from rest_framework import routers
 from .views import *
 from django.conf import settings
 from django.conf.urls.static import static
+# from rest_framework_simplejwt import views as jwt_views
 
 router = routers.DefaultRouter()
 router.register(r'applications', ApplicationViewSet)
@@ -24,6 +25,13 @@ urlpatterns = [
     path('api/login/', LoginView.as_view(), name='login'),
     path('api/logout/', LogoutView.as_view(), name='getAuthUserView'),
     path('api/getcurrentuser/', GetAuthUserView.as_view(), name='getcurrentuser'),
+    
+#     path('token/',
+#          jwt_views.TokenObtainPairView.as_view(),
+#          name='token_obtain_pair'),
+#     path('token/refresh/',
+#          jwt_views.TokenRefreshView.as_view(),
+#          name='token_refresh')
 ]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 # urlpatterns = router.urls
