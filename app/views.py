@@ -123,9 +123,7 @@ class LoginView(views.APIView):
         response = Response({'message': 'Login successful.'},
                             status=status.HTTP_200_OK)
         response.set_cookie(key='jwt', value=token, httponly=True,
-                            secure=settings.SESSION_COOKIE_SECURE, samesite='Strict')
-        print('response: ')
-        print(response)
+                            secure=settings.SESSION_COOKIE_SECURE, samesite='None')
 
         return response
 
