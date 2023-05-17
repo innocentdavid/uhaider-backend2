@@ -64,10 +64,11 @@ class HasTokenCookiePermission(BasePermission):
 
 class RegisterView(views.APIView):
     def post(self, request):
-        userWithEmail = CustomUser.objects.filter(email=email).first()
+        # print(request.data)
+        userWithEmail = CustomUser.objects.filter(email=request.data['email']).first()
         if userWithEmail is not None:
             return Response({"message": "Registration failed, user with email already registered"}, status=status.HTTP_208_ALREADY_REPORTED)
-        userWithName = CustomUser.objects.filter(name=name).first()
+        userWithName = CustomUser.objects.filter(name=request.data['name']).first()
         if userWithName is not None:
             return Response({"message": "Registration failed, user with name already registered"}, status=status.HTTP_208_ALREADY_REPORTED)
         serializer = UserSerializer(data=request.data)
@@ -76,7 +77,7 @@ class RegisterView(views.APIView):
 
         payload = {
             'id': user.email,
-            'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=24),
+            'exp': datetime.utcnow() + timedelta(hours=24),
         }
 
         token = jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
@@ -144,8 +145,8 @@ class LoginView(views.APIView):
 
 #         payload = {
 #             'id': user.email,
-#             'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=24),
-#             'iat': datetime.datetime.utcnow()
+#             'exp': datetime.utcnow() + timedelta(hours=24),
+#             'iat': datetime.utcnow()
 #         }
 
 #         token = jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')

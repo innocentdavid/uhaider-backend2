@@ -187,3 +187,18 @@ SESSION_COOKIE_SAMESITE = 'None'  # For cross-site cookies
 # CORS_ORIGIN_WHITELIST = (
 #     'http://localhost:3000',
 # )
+
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'DEBUG',
+    },
+}
