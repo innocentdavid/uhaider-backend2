@@ -1,50 +1,49 @@
+import base64
+import datetime
+import jwt
+import PyPDF2
+import tempfile
+
 from django.conf import settings
-from datetime import datetime, timedelta
 from django.contrib.auth import authenticate
-from rest_framework import views, status
+from django.db.models import Sum
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
-# from django.shortcuts import render
-from django.http import JsonResponse
-from rest_framework import viewsets, parsers, generics, views
-# from requests import Response
-from rest_framework import status, exceptions
+from rest_framework import exceptions, generics, parsers, status, viewsets, views
+from rest_framework.permissions import BasePermission
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
-from rest_framework.permissions import BasePermission
-from django.http import HttpResponse
+
 from .models import *
 from .serializers import *
-import base64
-import tempfile
-import PyPDF2
+
+from datetime import datetime, timedelta
 from django.views.decorators.csrf import csrf_exempt
-import jwt
-import datetime
-from django.db.models import Sum
+
 
 
 def has_permission_b(request):
-    return True
-    # token = request.COOKIES.get('jwt', None)
-    # if not token:
-    #     auth_header = request.META.get('HTTP_AUTHORIZATION')
-    #     if auth_header is not None and auth_header.startswith('Bearer '):
-    #         if auth_header[7:] != 'undefined':
-    #             token = auth_header[7:]
-
-    # if token is None:
-    #     return False
-    # try:
-    #     payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
-    # except jwt.exceptions.DecodeError:
-    #     return False
-    # except jwt.exceptions.InvalidSignatureError:
-    #     return False
-    # except jwt.exceptions.ExpiredSignatureError:
-    #     return False
-    # except:
-    #     return False
     # return True
+    token = request.COOKIES.get('jwt', None)
+    if not token:
+        auth_header = request.META.get('HTTP_AUTHORIZATION')
+        if auth_header is not None and auth_header.startswith('Bearer '):
+            if auth_header[7:] != 'undefined':
+                token = auth_header[7:]
+
+    if token is None:
+        return False
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+    except jwt.exceptions.DecodeError:
+        return False
+    except jwt.exceptions.InvalidSignatureError:
+        return False
+    except jwt.exceptions.ExpiredSignatureError:
+        return False
+    except:
+        return False
+    return True
         
 
 class HasTokenCookiePermission(BasePermission):
@@ -65,6 +64,12 @@ class HasTokenCookiePermission(BasePermission):
 
 class RegisterView(views.APIView):
     def post(self, request):
+        userWithEmail = CustomUser.objects.filter(email=email).first()
+        if userWithEmail is not None:
+            return Response({"message": "Registration failed, user with email already registered"}, status=status.HTTP_208_ALREADY_REPORTED)
+        userWithName = CustomUser.objects.filter(name=name).first()
+        if userWithName is not None:
+            return Response({"message": "Registration failed, user with name already registered"}, status=status.HTTP_208_ALREADY_REPORTED)
         serializer = UserSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
@@ -107,8 +112,8 @@ class LoginView(views.APIView):
             # 'id': user.id,
             # 'email': user.email,
             'id': user.email,
-            'exp': datetime.datetime.utcnow() + timedelta(days=1),
-            'iat': datetime.datetime.utcnow()
+            'exp': datetime.utcnow() + timedelta(hours=24),
+            'iat': datetime.utcnow()
         }
 
         token = jwt.encode(
@@ -182,9 +187,8 @@ class GetAuthUserView(views.APIView):
 
 class LogoutView(views.APIView):
     def post(self, request):
-        response = HttpResponse()
-        # response.delete_cookie('jwt')
-        response.set_cookie('jwt', '', expires=0, httponly=True)
+        response = Response()
+        response.delete_cookie('jwt')
         response.data = {
             'message': 'success'
         }

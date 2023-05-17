@@ -174,7 +174,14 @@ CORS_ORIGIN_ALLOW_ALL = True
 CORS_ALLOW_CREDENTIALS = True
 
 SESSION_COOKIE_SECURE = False  # During development
+# In production
+# SESSION_COOKIE_SECURE = True
+
 SESSION_COOKIE_SAMESITE = 'None'  # For cross-site cookies
+
+# Example for production
+# SESSION_COOKIE_DOMAIN = 'yourdomain.com'
+# SESSION_COOKIE_PATH = '/'
 
 # CORS_ORIGIN_ALLOW_ALL = False
 # CORS_ORIGIN_WHITELIST = (
