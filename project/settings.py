@@ -38,21 +38,21 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'corsheaders',
+    #own
+    'app',
     # 'allauth',
     # 'allauth.account',
     # 'allauth.socialaccount',
     # 'dj_rest_auth.registration',
     # 'django_filters',
     
-    #own
-    'app',
 
     #third_party
     'rest_framework',
     # 'rest_framework_simplejwt.token_blacklist'
     # 'dj_rest_auth',
     # 'rest_framework.authtoken',
-    'corsheaders',
     'djongo',
 ]
 
