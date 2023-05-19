@@ -39,16 +39,16 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'corsheaders',
-    #own
+    # own
     'app',
     # 'allauth',
     # 'allauth.account',
     # 'allauth.socialaccount',
     # 'dj_rest_auth.registration',
     # 'django_filters',
-    
 
-    #third_party
+
+    # third_party
     'rest_framework',
     # 'rest_framework_simplejwt.token_blacklist'
     # 'dj_rest_auth',
@@ -74,8 +74,10 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
-    # 'app.middleware.TokenAuthenticationMiddleware',
     'django.middleware.common.CommonMiddleware',
+    'django.middleware.cache.CacheMiddleware',
+    # 'app.middleware.TokenAuthenticationMiddleware',
+    # 'app.middleware.MyCookieMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -112,9 +114,9 @@ DATABASES = {
     'default': {
         'ENGINE': 'djongo',
         'CLIENT': {
-            "host": "mongodb+srv://devcent:JPifHZQhFtShsa0Y@fintechapicluster0.t1cpxfd.mongodb.net/?retryWrites=true&w=majority",
+            "host": "fad24eba3e1c.mylabserver.com:8085",
             "name": "uhaiderFintechMongodb",
-            "authMechanism": "SCRAM-SHA-1",  # For atlas cloud db
+            # "authMechanism": "SCRAM-SHA-1",  # For atlas cloud db
         },
         # 'NAME': 'uhaiderFintechMongodb',
         # 'USER': 'devcent',
@@ -173,15 +175,8 @@ ALLOWED_HOSTS = ['*']
 CORS_ORIGIN_ALLOW_ALL = True
 CORS_ALLOW_CREDENTIALS = True
 
-SESSION_COOKIE_SECURE = True  # During development
-# In production
-# SESSION_COOKIE_SECURE = True
-
-SESSION_COOKIE_SAMESITE = 'None'  # For cross-site cookies
-
-# Example for production
-# SESSION_COOKIE_DOMAIN = 'yourdomain.com'
-# SESSION_COOKIE_PATH = '/'
+SESSION_COOKIE_SAMESITE = 'None'
+SESSION_COOKIE_SECURE = True
 
 # CORS_ORIGIN_ALLOW_ALL = False
 # CORS_ORIGIN_WHITELIST = (

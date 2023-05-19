@@ -1,5 +1,7 @@
 from django.http import HttpResponse
+from django.middleware.http import MiddlewareMixin
 import jwt
+
 
 class TokenAuthenticationMiddleware:
     EXCLUDED_VIEWS = ['register', 'login']
@@ -19,31 +21,49 @@ class TokenAuthenticationMiddleware:
                     token = auth_header[7:]
             except:
                 token = None
+        # print(token)
         if token is not None:
             try:
                 payload = jwt.decode(
-                    token, settings.SECRET_KEY, algorithms=["HS256"])
+                    token, settings.SECRET_KEY, algorithms="HS256")
+                print("payload: ")
+                print(payload)
             except jwt.exceptions.InvalidSignatureError:
-                return HttpResponse('Invalid signature!', status=403)
+                return HttpResponse({'message': 'Invalid signature!'}, status=403)
             except jwt.exceptions.ExpiredSignatureError:
-                return HttpResponse('Signature has expired!', status=403)
+                return HttpResponse({'message': 'Signature has expired!'}, status=403)
             except jwt.exceptions.DecodeError:
-                return HttpResponse('Invalid token!', status=403)
+                return HttpResponse({'message': 'Invalid token!'}, status=403)
             except:
-                return HttpResponse('Unauthenticated!', status=403)
+                return HttpResponse({'message': 'Unauthenticated!'}, status=403)
 
         # if token is None:
         #     return False
         # return True
-        
+
         # if request.resolver_match is not None:
         #     print("request.resolver_match.url_name: ")
         #     print(token)
-            
+
         if (request.resolver_match is not None
                 and request.resolver_match.url_name not in self.EXCLUDED_VIEWS
                 and token is None):
             return HttpResponse('Token cookie not found', status=403)
 
         response = self.get_response(request)
+        return response
+
+
+class MyCookieMiddleware(MiddlewareMixin):
+    def process_request(self, request):
+        request.session['user_id'] = 'new user'
+        # print("request: ")
+        # print(request)
+        # if request.user.is_authenticated:
+        #     request.session['user_id'] = request.user.id
+
+    def process_response(self, request, response):
+        if request.session.get('user_id'):
+            response.set_cookie('user_id', request.session['user_id'])
+
         return response

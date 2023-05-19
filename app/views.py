@@ -21,10 +21,11 @@ from datetime import datetime, timedelta
 from django.views.decorators.csrf import csrf_exempt
 
 
-
 def has_permission_b(request):
     # return True
     token = request.COOKIES.get('jwt', None)
+    # print(token)
+    # print(request.META.get('HTTP_AUTHORIZATION'))
     if not token:
         auth_header = request.META.get('HTTP_AUTHORIZATION')
         if auth_header is not None and auth_header.startswith('Bearer '):
@@ -33,8 +34,9 @@ def has_permission_b(request):
 
     if token is None:
         return False
+    return True
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms="HS256")
     except jwt.exceptions.DecodeError:
         return False
     except jwt.exceptions.InvalidSignatureError:
@@ -44,7 +46,7 @@ def has_permission_b(request):
     except:
         return False
     return True
-        
+
 
 class HasTokenCookiePermission(BasePermission):
     def has_permission(self, request, view):
@@ -56,7 +58,7 @@ class HasTokenCookiePermission(BasePermission):
         #         print(auth_header)
         #         if auth_header[7:] != 'undefined':
         #             token = auth_header[7:]
-                    
+
         # if token is None:
         #     return False
         # return True
@@ -65,10 +67,12 @@ class HasTokenCookiePermission(BasePermission):
 class RegisterView(views.APIView):
     def post(self, request):
         # print(request.data)
-        userWithEmail = CustomUser.objects.filter(email=request.data['email']).first()
+        userWithEmail = CustomUser.objects.filter(
+            email=request.data['email']).first()
         if userWithEmail is not None:
             return Response({"message": "Registration failed, user with email already registered"}, status=status.HTTP_208_ALREADY_REPORTED)
-        userWithName = CustomUser.objects.filter(name=request.data['name']).first()
+        userWithName = CustomUser.objects.filter(
+            name=request.data['name']).first()
         if userWithName is not None:
             return Response({"message": "Registration failed, user with name already registered"}, status=status.HTTP_208_ALREADY_REPORTED)
         serializer = UserSerializer(data=request.data)
@@ -83,11 +87,19 @@ class RegisterView(views.APIView):
         token = jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
         #    .decode('utf-8')
         response = Response()
-        response.set_cookie(key="jwt", value=token, httponly=True)
+        # response.set_cookie(key="jwt", value=token, httponly=True)
+        response.set_cookie(
+            key='jwt',
+            value=token,
+            # httponly=True,
+            secure=True,
+            samesite='None'
+        )
 
         response_data = serializer.data
         # response_data['jwt'] = token
         response_data['message'] = "success"
+        response_data['token'] = token
         response.data = response_data
         # response.status
         return response
@@ -120,10 +132,29 @@ class LoginView(views.APIView):
         token = jwt.encode(
             token_payload, settings.SECRET_KEY, algorithm='HS256')
 
-        response = Response({'message': 'Login successful.'},
+        response = Response({'message': 'Login successful.', "token": token},
                             status=status.HTTP_200_OK)
-        response.set_cookie(key='jwt', value=token, httponly=True,
-                            secure=settings.SESSION_COOKIE_SECURE, samesite='None')
+
+        response.set_cookie(
+            key='jwt',
+            value=token,
+            # httponly=True,
+            samesite='None',
+            secure=True,
+            expires=datetime.utcnow() + timedelta(days=30),
+            path='/',
+        )
+
+        # response = HttpResponse()
+        # response.set_cookie(
+        #     key='jwt',
+        #     value=token,
+        # httponly=True,
+        #     samesite='None',
+        #     secure=True,
+        #     expires=datetime.utcnow() + timedelta(hours=24),
+        #     path='/',
+        # )
 
         return response
 
@@ -160,11 +191,12 @@ class LoginView(views.APIView):
 class GetAuthUserView(views.APIView):
     def get(self, request):
         token = request.COOKIES.get('jwt')
-        # print(token)
+        print(token)
         if token is None:
             return Response({"message": "Unauthenticated!"})
         try:
-            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+            payload = jwt.decode(
+                token, settings.SECRET_KEY, algorithms="HS256")
         except jwt.exceptions.InvalidSignatureError:
             return Response({"message": "Invalid signature!"})
         except jwt.exceptions.ExpiredSignatureError:
@@ -186,19 +218,41 @@ class GetAuthUserView(views.APIView):
 
 class LogoutView(views.APIView):
     def post(self, request):
-        response = Response()
-        response.delete_cookie('jwt')
-        response.data = {
-            'message': 'success'
-        }
-        return response
+        token = request.COOKIES.get('jwt')
+
+        if not token:
+            return Response({'message': 'You are not logged in.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        # Delete the JWT token from the cookie
+        response = HttpResponse()
+        response.delete_cookie(key='jwt')
+        response.set_cookie(
+            key='jwt',
+            value='',
+            # httponly=True,
+            samesite='None',
+            secure=True,
+            expires=datetime.utcnow() - timedelta(days=1),
+            path='/',
+        )
+        response.set_cookie(
+            key='djwt',
+            value='',
+            # httponly=True,
+            samesite='None',
+            secure=True,
+            expires=datetime.utcnow() - timedelta(days=1),
+            path='/',
+        )
+
+        return Response({'message': 'You have been logged out.'}, status=status.HTTP_200_OK)
 
 
 def get_application_pdfs(request, application_id):
     permission_classes = has_permission_b(request=request)
     if not permission_classes:
         return JsonResponse({"message": "Unauthorized!"}, status=status.HTTP_401_UNAUTHORIZED)
-        
+
     try:
         application = Application.objects.get(application_id=application_id)
     except Application.DoesNotExist:
@@ -299,7 +353,7 @@ def get_file(request, application_id, pdf_type):
     if not permission_classes:
         response_text = 'Unauthorized!'
         return HttpResponse(response_text, status=status.HTTP_401_UNAUTHORIZED)
-        
+
     pdf_file = get_object_or_404(
         PdfFile, application_id=application_id, pdf_type=pdf_type)
     response = HttpResponse(pdf_file.file, content_type='application/pdf')
@@ -320,7 +374,7 @@ def get_submitted_applications(request, application_id):
     permission_classes = has_permission_b(request=request)
     if not permission_classes:
         return JsonResponse({"message": "Unauthorized!"}, status=status.HTTP_401_UNAUTHORIZED)
-        
+
     submitted_applications = SubmittedApplication.objects.filter(
         application_id=application_id)
 
@@ -398,7 +452,7 @@ class SubmittedApplicationViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_201_CREATED)
 
 
-def get_application_stats(status_substring):    
+def get_application_stats(status_substring):
     all_apps = SubmittedApplication.objects.filter(
         status__icontains=status_substring)
     app_count = all_apps.count()
@@ -411,7 +465,7 @@ def get_starts(request):
     permission_classes = has_permission_b(request=request)
     if not permission_classes:
         return JsonResponse({"message": "Unauthorized!"}, status=status.HTTP_401_UNAUTHORIZED)
-        
+
     response_data = {}
     all_approved_apps = SubmittedApplication.objects.filter(
         status__icontains='approved')
