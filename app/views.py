@@ -20,50 +20,6 @@ from .serializers import *
 from datetime import datetime, timedelta
 from django.views.decorators.csrf import csrf_exempt
 
-
-def has_permission_b(request):
-    # return True
-    token = request.COOKIES.get('jwt', None)
-    # print(token)
-    # print(request.META.get('HTTP_AUTHORIZATION'))
-    if not token:
-        auth_header = request.META.get('HTTP_AUTHORIZATION')
-        if auth_header is not None and auth_header.startswith('Bearer '):
-            if auth_header[7:] != 'undefined':
-                token = auth_header[7:]
-
-    if token is None:
-        return False
-    return True
-    try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms="HS256")
-    except jwt.exceptions.DecodeError:
-        return False
-    except jwt.exceptions.InvalidSignatureError:
-        return False
-    except jwt.exceptions.ExpiredSignatureError:
-        return False
-    except:
-        return False
-    return True
-
-
-class HasTokenCookiePermission(BasePermission):
-    def has_permission(self, request, view):
-        return has_permission_b(request=request)
-        # token = request.COOKIES.get('jwt', None)
-        # if not token:
-        #     auth_header = request.META.get('HTTP_AUTHORIZATION')
-        #     if auth_header is not None and auth_header.startswith('Bearer '):
-        #         print(auth_header)
-        #         if auth_header[7:] != 'undefined':
-        #             token = auth_header[7:]
-
-        # if token is None:
-        #     return False
-        # return True
-
-
 class RegisterView(views.APIView):
     def post(self, request):
         # print(request.data)
@@ -85,16 +41,14 @@ class RegisterView(views.APIView):
         }
 
         token = jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
-        #    .decode('utf-8')
         response = Response()
-        # response.set_cookie(key="jwt", value=token, httponly=True)
-        response.set_cookie(
-            key='jwt',
-            value=token,
-            # httponly=True,
-            secure=True,
-            samesite='None'
-        )
+        # response.set_cookie(
+        #     key='jwt',
+        #     value=token,
+        #     # httponly=True,
+        #     secure=True,
+        #     samesite='None'
+        # )
 
         response_data = serializer.data
         # response_data['jwt'] = token
@@ -135,57 +89,17 @@ class LoginView(views.APIView):
         response = Response({'message': 'Login successful.', "token": token},
                             status=status.HTTP_200_OK)
 
-        response.set_cookie(
-            key='jwt',
-            value=token,
-            # httponly=True,
-            samesite='None',
-            secure=True,
-            expires=datetime.utcnow() + timedelta(days=30),
-            path='/',
-        )
-
-        # response = HttpResponse()
         # response.set_cookie(
         #     key='jwt',
         #     value=token,
-        # httponly=True,
+        #     # httponly=True,
         #     samesite='None',
         #     secure=True,
-        #     expires=datetime.utcnow() + timedelta(hours=24),
+        #     expires=datetime.utcnow() + timedelta(days=30),
         #     path='/',
         # )
 
         return response
-
-
-# class LoginView(views.APIView):
-#     def post(self, request):
-#         email = request.data['email']
-#         password = request.data['password']
-
-#         user = CustomUser.objects.filter(email=email).first()
-
-#         if user is None:
-#             return Response({"message": "User not found"})
-
-#         if not user.check_password(password):
-#             return Response({"message": "Password incorrect"})
-
-#         payload = {
-#             'id': user.email,
-#             'exp': datetime.utcnow() + timedelta(hours=24),
-#             'iat': datetime.utcnow()
-#         }
-
-#         token = jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
-#         # .decode('utf-8')
-#         response = Response()
-#         response.set_cookie(key="jwt", value=token, httponly=True)
-#         response.data = {"message": 'success'}
-#         return response
-
-#         # return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 class GetAuthUserView(views.APIView):
@@ -226,33 +140,20 @@ class LogoutView(views.APIView):
         # Delete the JWT token from the cookie
         response = HttpResponse()
         response.delete_cookie(key='jwt')
-        response.set_cookie(
-            key='jwt',
-            value='',
-            # httponly=True,
-            samesite='None',
-            secure=True,
-            expires=datetime.utcnow() - timedelta(days=1),
-            path='/',
-        )
-        response.set_cookie(
-            key='djwt',
-            value='',
-            # httponly=True,
-            samesite='None',
-            secure=True,
-            expires=datetime.utcnow() - timedelta(days=1),
-            path='/',
-        )
+        # response.set_cookie(
+        #     key='jwt',
+        #     value='',
+        #     # httponly=True,
+        #     samesite='None',
+        #     secure=True,
+        #     expires=datetime.utcnow() - timedelta(days=1),
+        #     path='/',
+        # )
 
         return Response({'message': 'You have been logged out.'}, status=status.HTTP_200_OK)
 
 
-def get_application_pdfs(request, application_id):
-    permission_classes = has_permission_b(request=request)
-    if not permission_classes:
-        return JsonResponse({"message": "Unauthorized!"}, status=status.HTTP_401_UNAUTHORIZED)
-
+def get_application_pdfs(request, application_id):    
     try:
         application = Application.objects.get(application_id=application_id)
     except Application.DoesNotExist:
@@ -285,13 +186,11 @@ def get_application_pdfs(request, application_id):
 class FunderViewSet(viewsets.ModelViewSet):
     serializer_class = FunderSerializer
     queryset = Funder.objects.all()
-    permission_classes = [HasTokenCookiePermission]
 
 
 class PDdfsViewSet(viewsets.ModelViewSet):
     serializer_class = PdfFileSerializer
     queryset = PdfFile.objects.all()
-    permission_classes = [HasTokenCookiePermission]
     parser_classes = (parsers.MultiPartParser, parsers.FormParser)
 
     def create(self, request, *args, **kwargs):
@@ -349,32 +248,14 @@ class PDdfsViewSet(viewsets.ModelViewSet):
 
 
 def get_file(request, application_id, pdf_type):
-    permission_classes = has_permission_b(request=request)
-    if not permission_classes:
-        response_text = 'Unauthorized!'
-        return HttpResponse(response_text, status=status.HTTP_401_UNAUTHORIZED)
-
     pdf_file = get_object_or_404(
         PdfFile, application_id=application_id, pdf_type=pdf_type)
     response = HttpResponse(pdf_file.file, content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="{pdf_file.file.name}"'
     return response
-    # file_path = os.path.join(settings.MEDIA_ROOT, 'pdf_files', filename)
-    # if os.path.exists(file_path):
-    #     with open(file_path, 'rb') as f:
-    #         file_content = f.read()
-    #     response = HttpResponse(file_content, content_type='application/pdf')
-    #     response['Content-Disposition'] = f'attachment; filename="{filename}"'
-    #     return response
-    # else:
-    #     return HttpResponse('File not found', status=404)
 
 
-def get_submitted_applications(request, application_id):
-    permission_classes = has_permission_b(request=request)
-    if not permission_classes:
-        return JsonResponse({"message": "Unauthorized!"}, status=status.HTTP_401_UNAUTHORIZED)
-
+def get_submitted_applications(request, application_id):    
     submitted_applications = SubmittedApplication.objects.filter(
         application_id=application_id)
 
@@ -387,7 +268,6 @@ def get_submitted_applications(request, application_id):
 class ApplicationViewSet(viewsets.ModelViewSet):
     queryset = Application.objects.all()
     serializer_class = ApplicationSerializer
-    permission_classes = [HasTokenCookiePermission]
 
     def create(self, request, *args, **kwargs):
         serializer = ApplicationSerializer(data=request.data)
@@ -408,16 +288,20 @@ class ApplicationViewSet(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
+        # serializer.is_valid(raise_exception=True)
+        if serializer.is_valid():
+            try:
+                self.perform_update(serializer)
+            except Exception as e:
+                return Response({'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(status=status.HTTP_201_CREATED)
 
-        return Response(status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class SubmittedApplicationViewSet(viewsets.ModelViewSet):
     queryset = SubmittedApplication.objects.all()
     serializer_class = SubmittedApplicationSerializer
-    permission_classes = [HasTokenCookiePermission]
 
     def create(self, request, *args, **kwargs):
         serializer = SubmittedApplicationSerializer(data=request.data)
@@ -446,10 +330,15 @@ class SubmittedApplicationViewSet(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
-
-        return Response(status=status.HTTP_201_CREATED)
+        # serializer.is_valid(raise_exception=True)
+        if serializer.is_valid():
+            try:
+                self.perform_update(serializer)
+            except Exception as e:
+                return Response({'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)            
+            return Response(status=status.HTTP_201_CREATED)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 def get_application_stats(status_substring):
@@ -461,11 +350,7 @@ def get_application_stats(status_substring):
     return {'count': app_count, 'sum': app_sum}
 
 
-def get_starts(request):
-    permission_classes = has_permission_b(request=request)
-    if not permission_classes:
-        return JsonResponse({"message": "Unauthorized!"}, status=status.HTTP_401_UNAUTHORIZED)
-
+def get_starts(request):    
     response_data = {}
     all_approved_apps = SubmittedApplication.objects.filter(
         status__icontains='approved')

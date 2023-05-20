@@ -75,8 +75,8 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.cache.CacheMiddleware',
-    # 'app.middleware.TokenAuthenticationMiddleware',
+    'app.middleware.TokenAuthenticationMiddleware',
+    # 'django.middleware.cache.CacheMiddleware',
     # 'app.middleware.MyCookieMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -114,7 +114,8 @@ DATABASES = {
     'default': {
         'ENGINE': 'djongo',
         'CLIENT': {
-            "host": "fad24eba3e1c.mylabserver.com:8085",
+            # "host": "fad24eba3e1c.mylabserver.com:8085",
+            "host": "mongodb+srv://devcent:JPifHZQhFtShsa0Y@fintechapicluster0.t1cpxfd.mongodb.net/?retryWrites=true&w=majority",
             "name": "uhaiderFintechMongodb",
             # "authMechanism": "SCRAM-SHA-1",  # For atlas cloud db
         },
