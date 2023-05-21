@@ -14,15 +14,6 @@ class TokenAuthenticationMiddleware:
 
     def __call__(self, request):
         token = request.COOKIES.get('jwt', None)
-        print("mw_token: ")
-        print(token)
-
-        print("mw_request.COOKIES: ")
-        print(request.COOKIES)
-
-        print("mw_request.META.get('HTTP_COOKIE'): ")
-        print(request.META.get('HTTP_COOKIE'))
-        # print(request.META.get('HTTP_AUTHORIZATION'))
 
         if not token:
             auth_header = request.META.get('HTTP_AUTHORIZATION')
@@ -34,12 +25,6 @@ class TokenAuthenticationMiddleware:
                 if auth_cookie is not None and auth_cookie.startswith('jwt'):
                     if auth_cookie[4:] != 'undefined':
                         token = auth_cookie[4:]
-                        
-        print("mw_final token: ")
-        print(token)
-        # print(token)
-        if token is None:
-            return JsonResponse({'message': 'Unauthenticated!'}, status=status.HTTP_401_UNAUTHORIZED)
             
         if token is not None:            
             try:
@@ -59,17 +44,11 @@ class TokenAuthenticationMiddleware:
             except:
                 print('Unauthenticated!')
                 return JsonResponse({'message': 'Unauthenticated!'}, status=status.HTTP_401_UNAUTHORIZED)
-
-        # if request.resolver_match is not None:
-        #     print("mw_request.resolver_match.url_name: ")
-        #     print(token)
-
+            
         if (request.resolver_match is not None
                 and request.resolver_match.url_name not in self.EXCLUDED_VIEWS
                 and token is None):
             return JsonResponse({'message': 'Token cookie not found'}, status=status.HTTP_401_UNAUTHORIZED)
-        print('t')
-        print(token)
         response = self.get_response(request)
         return response
 
