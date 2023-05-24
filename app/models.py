@@ -22,7 +22,8 @@ class CustomUser(AbstractUser):
 def generate_random_string(length=6):
     """Generate a random alphanumeric string of specified length."""
     characters = string.ascii_letters + string.digits
-    return ''.join(random.choice(characters) for _ in range(length))
+    r = ''.join(random.choice(characters) for _ in range(length))
+    return r
 
 
 class Funder(models.Model):
@@ -156,15 +157,16 @@ class Application(models.Model):
 
 class SubmittedApplication(models.Model):
     count = models.IntegerField(default=0)
-    funder = models.ForeignKey(Funder, on_delete=models.CASCADE, related_name='funder', blank=True, null=True)
+    funder = models.ForeignKey(
+        Funder, on_delete=models.CASCADE, related_name='funder', blank=True, null=True)
     submittedApplication_id = models.CharField(
         max_length=250, primary_key=True, unique=True, default=generate_random_string)
-    application_id = models.CharField(
-        max_length=250, default='')
+    application = models.ForeignKey(
+        Application, on_delete=models.CASCADE, related_name='submitted_applications')
+    # application_id = models.CharField(
+    #     max_length=250, default='')
     date_submitted = models.CharField(
         max_length=255, default="", blank=True)
-    # status = models.ForeignKey(
-    #     Status, on_delete=models.PROTECT, related_name='applications', blank=True)
     status = models.CharField(
         max_length=255, default="Created", blank=True)
     status_description = models.CharField(
@@ -289,6 +291,16 @@ class PdfFile(models.Model):
         max_length=255, default="", blank=True)
     ending_bal_amount = models.CharField(
         max_length=255, default="", blank=True)
+    
+    def delete(self, *args, **kwargs):
+        # Delete the related file from the filesystem
+        if self.file:
+            file_path = self.file.path
+            if os.path.exists(file_path):
+                os.remove(file_path)
+
+        # Call the parent's delete method to complete the deletion
+        super().delete(*args, **kwargs)
 
     def __str__(self):
         return f'{self.business_name} ({self.file.name})'

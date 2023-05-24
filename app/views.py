@@ -13,12 +13,14 @@ from rest_framework import exceptions, generics, parsers, status, viewsets, view
 from rest_framework.permissions import BasePermission
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
+from rest_framework.decorators import api_view
 
 from .models import *
 from .serializers import *
 
 from datetime import datetime, timedelta
 from django.views.decorators.csrf import csrf_exempt
+
 
 class RegisterView(views.APIView):
     def post(self, request):
@@ -85,9 +87,15 @@ class LoginView(views.APIView):
 
         token = jwt.encode(
             token_payload, settings.SECRET_KEY, algorithm='HS256')
+        user_serializer = UserSerializer(user)
 
-        response = Response({'message': 'Login successful.', "token": token},
-                            status=status.HTTP_200_OK)
+        response_data = {
+            'message': 'Login successful.',
+            'token': token,
+            'user': user_serializer.data  # Include serialized user data in the response
+        }
+
+        response = Response(response_data, status=status.HTTP_200_OK)
 
         # response.set_cookie(
         #     key='jwt',
@@ -105,7 +113,18 @@ class LoginView(views.APIView):
 class GetAuthUserView(views.APIView):
     def get(self, request):
         token = request.COOKIES.get('jwt')
-        print(token)
+
+        if not token:
+            auth_header = request.META.get('HTTP_AUTHORIZATION')
+            if auth_header is not None and auth_header.startswith('Bearer '):
+                if auth_header[7:] != 'undefined':
+                    token = auth_header[7:]
+            else:
+                auth_cookie = request.META.get('HTTP_COOKIE')
+                if auth_cookie is not None and auth_cookie.startswith('jwt'):
+                    if auth_cookie[4:] != 'undefined':
+                        token = auth_cookie[4:]
+
         if token is None:
             return Response({"message": "Unauthenticated!"})
         try:
@@ -132,28 +151,13 @@ class GetAuthUserView(views.APIView):
 
 class LogoutView(views.APIView):
     def post(self, request):
-        token = request.COOKIES.get('jwt')
-
-        if not token:
-            return Response({'message': 'You are not logged in.'}, status=status.HTTP_401_UNAUTHORIZED)
-
-        # Delete the JWT token from the cookie
         response = HttpResponse()
         response.delete_cookie(key='jwt')
-        # response.set_cookie(
-        #     key='jwt',
-        #     value='',
-        #     # httponly=True,
-        #     samesite='None',
-        #     secure=True,
-        #     expires=datetime.utcnow() - timedelta(days=1),
-        #     path='/',
-        # )
 
         return Response({'message': 'You have been logged out.'}, status=status.HTTP_200_OK)
 
 
-def get_application_pdfs(request, application_id):    
+def get_application_pdfs(request, application_id):
     try:
         application = Application.objects.get(application_id=application_id)
     except Application.DoesNotExist:
@@ -162,23 +166,7 @@ def get_application_pdfs(request, application_id):
     pdfs = PdfFile.objects.filter(
         application__application_id=application_id)
 
-    # pdf_urls = [pdf.file.url for pdf in pdfs]
-
-    pdf_data = []
-    for pdf in pdfs:
-        application = pdf.application
-        pdf_data.append({
-            # "pdf_file": pdf.file,
-            "pdf_urls": pdf.file.url,
-            'pdf_type': pdf.pdf_type,
-            'business_name': pdf.business_name,
-            'bank_name': pdf.bank_name,
-            'begin_bal_date': pdf.begin_bal_date,
-            'begin_bal_amount': pdf.begin_bal_amount,
-            'total_deposit': pdf.total_deposit,
-            'ending_bal_date': pdf.ending_bal_date,
-            'ending_bal_amount': pdf.ending_bal_amount
-        })
+    pdf_data = list(pdfs.values())
 
     return JsonResponse({'pdfs': pdf_data})
 
@@ -247,6 +235,26 @@ class PDdfsViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_201_CREATED)
 
 
+# this route only updates pdf data
+@api_view(['PUT'])
+def update_pdf_data(request, id):
+    try:
+        pdf_file = PdfFile.objects.get(id=id)
+    except PdfFile.DoesNotExist:
+        return Response({"message": "PDF file not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    serializer = PdfFileSerializer(pdf_file, data=request.data, partial=True)
+    print(serializer.is_valid())
+    if serializer.is_valid():
+        serializer.save()
+        # try:
+        # except Exception as e:
+        #     return Response({'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
 def get_file(request, application_id, pdf_type):
     pdf_file = get_object_or_404(
         PdfFile, application_id=application_id, pdf_type=pdf_type)
@@ -255,7 +263,7 @@ def get_file(request, application_id, pdf_type):
     return response
 
 
-def get_submitted_applications(request, application_id):    
+def get_submitted_applications(request, application_id):
     submitted_applications = SubmittedApplication.objects.filter(
         application_id=application_id)
 
@@ -263,6 +271,13 @@ def get_submitted_applications(request, application_id):
         submitted_applications, many=True)
 
     return JsonResponse(serialized_application.data, safe=False, status=status.HTTP_200_OK)
+
+
+def generate_random_string(length=6):
+    """Generate a random alphanumeric string of specified length."""
+    characters = string.ascii_letters + string.digits
+    r = ''.join(random.choice(characters) for _ in range(length))
+    return r
 
 
 class ApplicationViewSet(viewsets.ModelViewSet):
@@ -305,26 +320,38 @@ class SubmittedApplicationViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         serializer = SubmittedApplicationSerializer(data=request.data)
-
+        # print(serializer.is_valid())
         if serializer.is_valid():
-            if not 'funder_names' in request.data:
+            if 'funder_names' not in request.data:
                 return Response({"message": "funder not selected"}, status=status.HTTP_400_BAD_REQUEST)
-            funder_names = request.data['funder_names']
-            for funder_name in funder_names:
-                funder = Funder.objects.filter(
-                    name=funder_name['name']).first()
+
+            funders = request.data['funder_names']
+            response_data = {'error': []}
+
+            for f in funders:
+                funder = Funder.objects.filter(name=f['name']).first()
                 if not funder:
-                    return Response({"message": "funder not found"}, status=status.HTTP_404_NOT_FOUND)
+                    response_data['error'].append(
+                        {'funder_name': f['name'], 'message': 'funder not found'})
+                    continue
+
+                application = Application.objects.filter(
+                    application_id=request.data['application_id']).first()
                 submittedApplication = SubmittedApplication(
                     **serializer.validated_data)
+                submittedApplication_id = submittedApplication.submittedApplication_id
+                submittedApplication.application = application
                 submittedApplication.funder = funder
+                total_count = SubmittedApplication.objects.count()
+                submittedApplication.count = total_count+1
                 submittedApplication.save()
-                submittedApplication_id = submittedApplication.application_id
+                print("submittedApplication_id: ")
+                print(submittedApplication_id)
 
-                response_data = serializer.data
-                response_data['submittedApplication_id'] = submittedApplication_id
-
+            response_data = serializer.data
+            # response_data['submittedApplication_id'] = submittedApplication_id
             return Response(response_data, status=status.HTTP_201_CREATED)
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def update(self, request, *args, **kwargs):
@@ -335,9 +362,9 @@ class SubmittedApplicationViewSet(viewsets.ModelViewSet):
             try:
                 self.perform_update(serializer)
             except Exception as e:
-                return Response({'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)            
+                return Response({'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
             return Response(status=status.HTTP_201_CREATED)
-        
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -350,7 +377,7 @@ def get_application_stats(status_substring):
     return {'count': app_count, 'sum': app_sum}
 
 
-def get_starts(request):    
+def get_starts(request):
     response_data = {}
     all_approved_apps = SubmittedApplication.objects.filter(
         status__icontains='approved')
@@ -363,7 +390,7 @@ def get_starts(request):
 
     try:
         percentage = round(
-            (app_sum / commission_price_from_all_approved_apps_sum)*100, 2)
+            (commission_price_from_all_approved_apps_sum*100)/app_sum, 2)
     except:
         percentage = 0
 

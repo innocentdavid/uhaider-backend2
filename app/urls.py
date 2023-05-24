@@ -19,6 +19,7 @@ urlpatterns = [
          get_starts, name='get_starts'),
     path('api/applications/<str:application_id>/pdfs/',
          get_application_pdfs, name='get_application_pdfs'),
+    path('api/pdf/<int:id>/', update_pdf_data, name='update_pdf_data'),
     path('get_file/<str:application_id>/<str:pdf_type>/',
          get_file, name="get_file"),
     path('api/register/', RegisterView.as_view(), name='register'),
