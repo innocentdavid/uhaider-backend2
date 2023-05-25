@@ -1,0 +1,21 @@
+<!-- base.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{% block title %}{% endblock %}</title>
+    <!-- Add your CSS and other common head elements here -->
+</head>
+<body>
+    <!-- Add your common header and navigation elements here -->
+       
+    <!-- Content block to be filled by child templates -->
+    <div class="content">
+        {% block content %}{% endblock %}
+    </div>
+       
+    <!-- Add your common footer elements here -->
+    <footer>
+        <!-- Footer content -->
+    </footer>
+</body>
+</html>

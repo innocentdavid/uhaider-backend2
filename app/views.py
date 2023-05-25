@@ -8,7 +8,7 @@ from django.conf import settings
 from django.contrib.auth import authenticate
 from django.db.models import Sum
 from django.http import HttpResponse, JsonResponse
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, render
 from rest_framework import exceptions, generics, parsers, status, viewsets, views
 from rest_framework.permissions import BasePermission
 from rest_framework.renderers import JSONRenderer
@@ -180,6 +180,16 @@ class PDdfsViewSet(viewsets.ModelViewSet):
     serializer_class = PdfFileSerializer
     queryset = PdfFile.objects.all()
     parser_classes = (parsers.MultiPartParser, parsers.FormParser)
+    
+    def pdf_view(self, request, url):
+        print(url)
+        # Retrieve the PDF file object
+        pdf_file = PdfFile(
+            file=f"pdf_files/{url}")
+        context = {
+            'pdf_url': pdf_file.file,
+        }
+        return render(request, 'pdf_viewer.html', context)
 
     def create(self, request, *args, **kwargs):
         if not 'pdf_type' in request.data:
@@ -281,17 +291,25 @@ def generate_random_string(length=6):
 
 
 class ApplicationViewSet(viewsets.ModelViewSet):
-    queryset = Application.objects.all()
+    queryset = Application.objects.order_by('-count').all()
     serializer_class = ApplicationSerializer
 
     def create(self, request, *args, **kwargs):
+        last_application = Application.objects.order_by(
+            'date_submitted').last()
+        if last_application is not None:
+            last_count = last_application.count
+            # print(last_count)
+        else:
+            last_count = 0
+        data = request.data
+        data['count'] = last_count+1
+        # print(data)
         serializer = ApplicationSerializer(data=request.data)
         # print(serializer.is_valid())
         if serializer.is_valid():
             application = Application(**serializer.validated_data)
             application_id = application.application_id
-            total_count = Application.objects.count()
-            application.count = total_count+1
             application.save()
 
             response_data = serializer.data
@@ -315,7 +333,7 @@ class ApplicationViewSet(viewsets.ModelViewSet):
 
 
 class SubmittedApplicationViewSet(viewsets.ModelViewSet):
-    queryset = SubmittedApplication.objects.all()
+    queryset = SubmittedApplication.objects.order_by('-date_submitted').all()
     serializer_class = SubmittedApplicationSerializer
 
     def create(self, request, *args, **kwargs):
@@ -345,8 +363,6 @@ class SubmittedApplicationViewSet(viewsets.ModelViewSet):
                 total_count = SubmittedApplication.objects.count()
                 submittedApplication.count = total_count+1
                 submittedApplication.save()
-                print("submittedApplication_id: ")
-                print(submittedApplication_id)
 
             response_data = serializer.data
             # response_data['submittedApplication_id'] = submittedApplication_id

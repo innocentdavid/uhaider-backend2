@@ -75,13 +75,13 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'app.middleware.TokenAuthenticationMiddleware',
     # 'django.middleware.cache.CacheMiddleware',
     # 'app.middleware.MyCookieMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'app.middleware.TokenAuthenticationMiddleware',
 ]
 
 X_FRAME_OPTIONS = 'ALLOWALL'

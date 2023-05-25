@@ -11,8 +11,10 @@ router.register(r'submittedApplications', SubmittedApplicationViewSet)
 router.register(r'funders', FunderViewSet)
 router.register(r'pdfs', PDdfsViewSet)
 
-urlpatterns = [
+urlpatterns = [    
     path('', include(router.urls)),
+    path('pdfs/<str:url>/',
+         PDdfsViewSet.as_view({'get': 'pdf_view'}), name='pdf_view'),
     path('api/submittedApplications/<str:application_id>/',
          get_submitted_applications, name='get_submitted_applications'),
     path('api/get_starts/',

@@ -39,7 +39,7 @@ class Funder(models.Model):
 
 
 class Application(models.Model):
-    count = models.IntegerField(default=0)
+    count = models.IntegerField(unique=True, db_index=True)
     application_id = models.CharField(
         max_length=250, primary_key=True, unique=True, default=generate_random_string)
     date_submitted = models.CharField(
