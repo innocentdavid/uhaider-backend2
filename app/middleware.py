@@ -61,7 +61,7 @@ class TokenAuthenticationMiddleware:
         if token is None:
             return JsonResponse({'message': 'Token cookie not found'}, status=status.HTTP_401_UNAUTHORIZED)
 
-        print('request.resolver_match is None')
+        print('something went wrong!')
         return JsonResponse({'message': 'Unauthenticated!'}, status=status.HTTP_401_UNAUTHORIZED)
 
 

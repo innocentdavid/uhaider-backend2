@@ -296,7 +296,7 @@ class ApplicationViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         last_application = Application.objects.order_by(
-            'date_submitted').last()
+            'count').last()
         if last_application is not None:
             last_count = last_application.count
             # print(last_count)
@@ -304,7 +304,6 @@ class ApplicationViewSet(viewsets.ModelViewSet):
             last_count = 0
         data = request.data
         data['count'] = last_count+1
-        # print(data)
         serializer = ApplicationSerializer(data=request.data)
         # print(serializer.is_valid())
         if serializer.is_valid():
