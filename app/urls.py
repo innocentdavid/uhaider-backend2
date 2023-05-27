@@ -11,9 +11,9 @@ router.register(r'submittedApplications', SubmittedApplicationViewSet)
 router.register(r'funders', FunderViewSet)
 router.register(r'pdfs', PDdfsViewSet)
 
-urlpatterns = [    
+urlpatterns = [
     path('', include(router.urls)),
-    path('pdfs/<str:url>/',
+    path('api/pdfs/pdf_files/<str:url>/',
          PDdfsViewSet.as_view({'get': 'pdf_view'}), name='pdf_view'),
     path('api/submittedApplications/<str:application_id>/',
          get_submitted_applications, name='get_submitted_applications'),
@@ -28,13 +28,13 @@ urlpatterns = [
     path('api/login/', LoginView.as_view(), name='login'),
     path('api/logout/', LogoutView.as_view(), name='getAuthUserView'),
     path('api/getcurrentuser/', GetAuthUserView.as_view(), name='getcurrentuser'),
-    
-#     path('token/',
-#          jwt_views.TokenObtainPairView.as_view(),
-#          name='token_obtain_pair'),
-#     path('token/refresh/',
-#          jwt_views.TokenRefreshView.as_view(),
-#          name='token_refresh')
-]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+    #     path('token/',
+    #          jwt_views.TokenObtainPairView.as_view(),
+    #          name='token_obtain_pair'),
+    #     path('token/refresh/',
+    #          jwt_views.TokenRefreshView.as_view(),
+    #          name='token_refresh')
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 # urlpatterns = router.urls

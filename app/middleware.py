@@ -3,15 +3,16 @@ from django.http import JsonResponse
 from rest_framework import status
 from django.middleware.http import MiddlewareMixin
 import jwt
-        
+
 
 def get_url_path(request):
     path = request.path.rstrip('/')  # Remove trailing slash if present
     return path
 
+
 class TokenAuthenticationMiddleware:
     EXCLUDED_VIEWS = ['/api/register', '/api/login',
-                      '/api/getcurrentuser', '/api/logout']
+                      '/api/getcurrentuser', '/api/logout', '/api/pdfs/pdf_files']
     TOKEN_COOKIE_NAME = 'jwt'
 
     def __init__(self, get_response):
@@ -19,6 +20,12 @@ class TokenAuthenticationMiddleware:
 
     def __call__(self, request):
         url_path = get_url_path(request)
+        if url_path is not None and url_path.startswith('/api/pdfs/pdf_files'):
+            response = self.get_response(request)
+            return response
+        if url_path is not None and url_path.startswith('/pdf_files'):
+            response = self.get_response(request)
+            return response
         if (url_path is not None
                 and url_path in self.EXCLUDED_VIEWS):
             response = self.get_response(request)
@@ -36,7 +43,7 @@ class TokenAuthenticationMiddleware:
                 if auth_cookie is not None and auth_cookie.startswith(self.TOKEN_COOKIE_NAME):
                     if auth_cookie[4:] != 'undefined':
                         token = auth_cookie[4:]
-                        
+        # print(token)
         if token is not None:
             try:
                 payload = jwt.decode(

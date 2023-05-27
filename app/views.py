@@ -180,12 +180,11 @@ class PDdfsViewSet(viewsets.ModelViewSet):
     serializer_class = PdfFileSerializer
     queryset = PdfFile.objects.all()
     parser_classes = (parsers.MultiPartParser, parsers.FormParser)
-    
+
     def pdf_view(self, request, url):
-        print(url)
+        # print(url)
         # Retrieve the PDF file object
-        pdf_file = PdfFile(
-            file=f"pdf_files/{url}")
+        pdf_file = PdfFile(file=f"pdf_files/{url}")
         context = {
             'pdf_url': pdf_file.file,
         }
@@ -263,7 +262,7 @@ def update_pdf_data(request, id):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
 
 def get_file(request, application_id, pdf_type):
     pdf_file = get_object_or_404(
