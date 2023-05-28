@@ -164,8 +164,7 @@ def get_application_pdfs(request, application_id):
     except Application.DoesNotExist:
         return JsonResponse({'error': 'Application not found.'}, status=404)
 
-    pdfs = PdfFile.objects.filter(
-        application__application_id=application_id)
+    pdfs = PdfFile.objects.filter(application__application_id=application_id)
 
     pdf_data = list(pdfs.values())
 
@@ -176,13 +175,62 @@ class EmailViewSet(viewsets.ModelViewSet):
     serializer_class = EmailSerializer
     queryset = Email.objects.all()
 
+    def get_queryset(self):
+        # Get the value of 'sent' parameter from the request query parameters
+        sent_param = self.request.query_params.get('sent')
+        if sent_param is not None:
+            # Convert to lowercase for case-insensitive comparison
+            sent_param = sent_param.lower()
+
+            if sent_param == 'true':
+                sent_param = True
+            elif sent_param == 'false':
+                sent_param = False
+            else:
+                sent_param = None
+
+        queryset = Email.objects.order_by('-count').all()
+
+        if sent_param is not None:
+            filtered_queryset = []
+            for q in queryset:
+                if q.sent == sent_param:
+                    filtered_queryset.append(q)
+            return filtered_queryset
+
+        print("queryset")
+        print(vars(queryset))
+        return queryset
+
 
 class LatestRecordViewSet(viewsets.ModelViewSet):
     serializer_class = LatestRecordSerializer
     queryset = LatestRecord.objects.all()
 
-    # def create(self, request, *args, **kwargs):
-    #     print(request.data)
+    def get_queryset(self):
+        # Get the value of 'sent' parameter from the request query parameters
+        sent_param = self.request.query_params.get('sent')
+        if sent_param is not None:
+            # Convert to lowercase for case-insensitive comparison
+            sent_param = sent_param.lower()
+
+            if sent_param == 'true':
+                sent_param = True
+            elif sent_param == 'false':
+                sent_param = False
+            else:
+                sent_param = None
+
+        queryset = LatestRecord.objects.order_by('-count').all()
+
+        if sent_param is not None:
+            filtered_queryset = []
+            for q in queryset:
+                if q.sent == sent_param:
+                    filtered_queryset.append(q)
+            return filtered_queryset
+
+        return queryset
 
 
 class FunderViewSet(viewsets.ModelViewSet):
@@ -196,15 +244,17 @@ class PDdfsViewSet(viewsets.ModelViewSet):
     parser_classes = (parsers.MultiPartParser, parsers.FormParser)
 
     def pdf_view(self, request, folder, url):
-        # print(url)
-        # Retrieve the PDF file object
         pdf_file = PdfFile(file=f"pdf_files/{folder}/{url}")
-        print("pdf_file: ")
-        print(pdf_file)
         context = {
             'pdf_url': pdf_file.file,
         }
-        return render(request, 'pdf_viewer.html', context)
+        # return render(request, 'pdf_viewer.html', context)
+
+        # def pdf_view(request):
+        with open(pdf_file.file.path, 'rb') as pdf:
+            response = HttpResponse(pdf.read(), content_type='application/pdf')
+            response['Content-Disposition'] = 'inline;filename=mypdf.pdf'
+            return response
 
     def create(self, request, *args, **kwargs):
         if not 'pdf_type' in request.data:
