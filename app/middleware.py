@@ -33,7 +33,7 @@ class TokenAuthenticationMiddleware:
 
         token = request.COOKIES.get(self.TOKEN_COOKIE_NAME, None)
 
-        if not token:
+        if token is None:
             auth_header = request.META.get('HTTP_AUTHORIZATION')
             if auth_header is not None and auth_header.startswith('Bearer '):
                 if auth_header[7:] != 'undefined':

@@ -10,10 +10,16 @@ router.register(r'applications', ApplicationViewSet)
 router.register(r'submittedApplications', SubmittedApplicationViewSet)
 router.register(r'funders', FunderViewSet)
 router.register(r'pdfs', PDdfsViewSet)
+router.register(r'emails', EmailViewSet)
+router.register(r'latestRecords', LatestRecordViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
-    path('api/pdfs/pdf_files/<str:url>/',
+    #     path('api/pdfs/<str:url>/',
+    #          PDdfsViewSet.as_view({'get': 'pdf_view'}), name='2pdf_view'),
+    #     path('api/pdfs/pdf_files/<str:url>/',
+    #          PDdfsViewSet.as_view({'get': 'pdf_view'}), name='3pdf_view'),
+    path('api/pdfs/pdf_files/<str:folder>/<str:url>/',
          PDdfsViewSet.as_view({'get': 'pdf_view'}), name='pdf_view'),
     path('api/submittedApplications/<str:application_id>/',
          get_submitted_applications, name='get_submitted_applications'),
@@ -28,6 +34,7 @@ urlpatterns = [
     path('api/login/', LoginView.as_view(), name='login'),
     path('api/logout/', LogoutView.as_view(), name='getAuthUserView'),
     path('api/getcurrentuser/', GetAuthUserView.as_view(), name='getcurrentuser'),
+    path('get_score/<str:application_id>/', get_score, name="get_score"),
 
     #     path('token/',
     #          jwt_views.TokenObtainPairView.as_view(),

@@ -3,6 +3,7 @@ import datetime
 import jwt
 import PyPDF2
 import tempfile
+import random
 
 from django.conf import settings
 from django.contrib.auth import authenticate
@@ -171,6 +172,19 @@ def get_application_pdfs(request, application_id):
     return JsonResponse({'pdfs': pdf_data})
 
 
+class EmailViewSet(viewsets.ModelViewSet):
+    serializer_class = EmailSerializer
+    queryset = Email.objects.all()
+
+
+class LatestRecordViewSet(viewsets.ModelViewSet):
+    serializer_class = LatestRecordSerializer
+    queryset = LatestRecord.objects.all()
+
+    # def create(self, request, *args, **kwargs):
+    #     print(request.data)
+
+
 class FunderViewSet(viewsets.ModelViewSet):
     serializer_class = FunderSerializer
     queryset = Funder.objects.all()
@@ -181,10 +195,12 @@ class PDdfsViewSet(viewsets.ModelViewSet):
     queryset = PdfFile.objects.all()
     parser_classes = (parsers.MultiPartParser, parsers.FormParser)
 
-    def pdf_view(self, request, url):
+    def pdf_view(self, request, folder, url):
         # print(url)
         # Retrieve the PDF file object
-        pdf_file = PdfFile(file=f"pdf_files/{url}")
+        pdf_file = PdfFile(file=f"pdf_files/{folder}/{url}")
+        print("pdf_file: ")
+        print(pdf_file)
         context = {
             'pdf_url': pdf_file.file,
         }
@@ -228,6 +244,7 @@ class PDdfsViewSet(viewsets.ModelViewSet):
             return Response({"message": "application not found"}, status=status.HTTP_404_NOT_FOUND)
 
         pdfFile = PdfFile.objects.create(
+            application=application,
             file=pdf_file,
             pdf_type=pdf_type,
             business_name=business_name,
@@ -238,7 +255,6 @@ class PDdfsViewSet(viewsets.ModelViewSet):
             ending_bal_date=ending_bal_date,
             total_deposit=total_deposit,
         )
-        pdfFile.application_id = application
         pdfFile.save()
 
         return Response(status=status.HTTP_201_CREATED)
@@ -270,6 +286,20 @@ def get_file(request, application_id, pdf_type):
     response = HttpResponse(pdf_file.file, content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="{pdf_file.file.name}"'
     return response
+
+
+def get_score(request, application_id):
+    score = random.randint(100, 999)
+    response_data = {}
+    response_data['score'] = score
+    application = get_object_or_404(Application, application_id=application_id)
+    application.credit_score = score
+    serializer = ApplicationSerializer(
+        application, data={"credit_score": score}, partial=True)
+    if serializer.is_valid():
+        serializer.save()
+        return JsonResponse(serializer.data, safe=False, status=status.HTTP_200_OK)
+    return JsonResponse({"message": "application not found!", "error": serializer.error}, safe=False, status=status.HTTP_404_NOT_FOUND)
 
 
 def get_submitted_applications(request, application_id):

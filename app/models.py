@@ -7,6 +7,31 @@ from django.contrib.auth.models import AbstractUser, Group, Permission
 from django.utils.translation import gettext_lazy as _
 import random
 import string
+import os
+import shutil
+from django.db.models.signals import pre_delete, pre_save
+from django.dispatch import receiver
+
+
+def generate_random_string(length=6):
+    """Generate a random alphanumeric string of specified length."""
+    characters = string.ascii_letters + string.digits
+    r = ''.join(random.choice(characters) for _ in range(length))
+    return r
+
+
+def get_pdf_upload_path(instance, filename):
+    # print(vars(instance))
+    if instance is not None:
+        id = instance.application.count
+        application_id = instance.application_id
+
+        # Construct the folder path
+        folder_path = f'pdf_files/{id}_{application_id}/'
+
+        # Combine the folder path with the filename
+        return os.path.join(folder_path, filename)
+    return 'pdf_files/'
 
 
 class CustomUser(AbstractUser):
@@ -17,13 +42,6 @@ class CustomUser(AbstractUser):
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
-
-
-def generate_random_string(length=6):
-    """Generate a random alphanumeric string of specified length."""
-    characters = string.ascii_letters + string.digits
-    r = ''.join(random.choice(characters) for _ in range(length))
-    return r
 
 
 class Funder(models.Model):
@@ -128,17 +146,17 @@ class Application(models.Model):
     description_of_business = models.CharField(
         max_length=255, default="", blank=True)
 
-    advanced_price = models.IntegerField(default=0)
-    commission_price = models.IntegerField(default=0)
-    percentage = models.IntegerField(default=0)
-    factor = models.IntegerField(default=0)
-    total_fee = models.IntegerField(default=0)
-    payback = models.IntegerField(default=0)
+    advanced_price = models.IntegerField(blank=True, null=True)
+    commission_price = models.IntegerField(blank=True, null=True)
+    percentage = models.IntegerField(blank=True, null=True)
+    factor = models.IntegerField(blank=True, null=True)
+    total_fee = models.IntegerField(blank=True, null=True)
+    payback = models.IntegerField(blank=True, null=True)
     term = models.CharField(
         max_length=255, default="", blank=True)
-    frequency = models.IntegerField(default=0)
-    payment = models.IntegerField(default=0)
-    net_funding_amount = models.IntegerField(default=0)
+    frequency = models.IntegerField(blank=True, null=True)
+    payment = models.IntegerField(blank=True, null=True)
+    net_funding_amount = models.IntegerField(blank=True, null=True)
 
     # def save(self, *args, **kwargs):
     #     self.count += 1
@@ -272,7 +290,7 @@ class SubmittedApplication(models.Model):
 class PdfFile(models.Model):
     application = models.ForeignKey(
         Application, on_delete=models.CASCADE, related_name="pdfFiles")
-    file = models.FileField(upload_to='pdf_files/')
+    file = models.FileField(upload_to=get_pdf_upload_path)
     # file = models.BinaryField()
     pdf_type = models.CharField(
         max_length=255, default="", blank=True)
@@ -291,7 +309,7 @@ class PdfFile(models.Model):
         max_length=255, default="", blank=True)
     ending_bal_amount = models.CharField(
         max_length=255, default="", blank=True)
-    
+
     def delete(self, *args, **kwargs):
         # Delete the related file from the filesystem
         if self.file:
@@ -304,3 +322,80 @@ class PdfFile(models.Model):
 
     def __str__(self):
         return f'{self.business_name} ({self.file.name})'
+
+
+@receiver(pre_delete, sender=Application)
+# Delete the associated PDF files to an application
+def delete_related_pdfs(sender, instance, **kwargs):
+    pdf_file = PdfFile.objects.get(application_id=instance.application_id)
+    if pdf_file:
+        id = instance.count
+        application_id = instance.application_id
+        folder_path = f'pdf_files/{id}_{application_id}/'
+        # Delete the file
+        if os.path.isdir(folder_path):
+            shutil.rmtree(folder_path)
+
+
+class Email(models.Model):
+    count = models.IntegerField(default=0)
+    idx = models.CharField(
+        max_length=250, primary_key=True, unique=True, default=generate_random_string)
+    # epoch = models.IntegerField()
+    epoch = models.CharField(max_length=255, default="", blank=True)
+    sent = models.BooleanField(default=False)
+    sent_to = models.CharField(max_length=255, default="", blank=True)
+    # email_id = models.EmailField(max_length=255, default="", blank=True)
+    email_id = models.CharField(max_length=255, default="", blank=True)
+    subject = models.CharField(max_length=255, default="", blank=True)
+    application_id = models.CharField(max_length=255, default="", blank=True)
+    status = models.CharField(max_length=255, default="", blank=True)
+    status_message = models.CharField(max_length=255, default="", blank=True)
+    error = models.CharField(max_length=255, default="", blank=True)
+    error_message = models.CharField(max_length=255, default="", blank=True)
+
+    def __str__(self):
+        return f"{self.email_id} - {self.subject}"
+
+
+class LatestRecord(models.Model):
+    count = models.IntegerField(default=0)
+    idx = models.CharField(
+        max_length=250, primary_key=True, unique=True, default=generate_random_string)
+    # epoch = models.IntegerField()
+    epoch = models.CharField(max_length=255, default="", blank=True)
+    timestamp = models.CharField(max_length=255, default="", blank=True)
+    last_email_id = models.CharField(max_length=255, default="", blank=True)
+    last_thread_id = models.CharField(max_length=255, default="", blank=True)
+    subject = models.CharField(max_length=255, default="", blank=True)
+
+    def __str__(self):
+        return f"{self.last_email_id} - {self.subject}"
+
+
+@receiver(pre_save, sender=Email)
+def update_count_field_email(sender, instance, **kwargs):
+    if instance:
+        last_Email = Email.objects.order_by(
+            'count').last()
+        if last_Email is not None:
+            last_count = last_Email.count
+            # print(last_count)
+        else:
+            last_count = 0
+
+        instance.count = last_count+1
+
+
+@receiver(pre_save, sender=LatestRecord)
+def update_count_field_latestRecord(sender, instance, **kwargs):
+    if instance:
+        last_LatestRecord = LatestRecord.objects.order_by(
+            'count').last()
+        if last_LatestRecord is not None:
+            last_count = last_LatestRecord.count
+            # print(last_count)
+        else:
+            last_count = 0
+
+        instance.count = last_count+1

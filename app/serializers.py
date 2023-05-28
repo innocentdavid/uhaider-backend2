@@ -27,7 +27,7 @@ class PdfFileSerializer(serializers.ModelSerializer):
     class Meta:
         model = PdfFile
         fields = '__all__'
-        
+
 
 class ApplicationSerializer(serializers.ModelSerializer):
     # status_description = serializers.CharField(source='status.description', read_only=True)
@@ -35,7 +35,23 @@ class ApplicationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Application
         fields = "__all__"
-        
+
+
+class EmailSerializer(serializers.ModelSerializer):
+    # status_description = serializers.CharField(source='status.description', read_only=True)
+
+    class Meta:
+        model = Email
+        fields = "__all__"
+
+
+class LatestRecordSerializer(serializers.ModelSerializer):
+    # status_description = serializers.CharField(source='status.description', read_only=True)
+
+    class Meta:
+        model = LatestRecord
+        fields = "__all__"
+
 
 class SubmittedApplicationSerializer(serializers.ModelSerializer):
     # status_description = serializers.CharField(source='status.description', read_only=True)
