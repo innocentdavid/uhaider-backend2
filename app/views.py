@@ -23,7 +23,7 @@ from .serializers import *
 from datetime import datetime, timedelta
 from django.views.decorators.csrf import csrf_exempt
 
-from config import expiration_time_seconds
+from .config import expiration_time_seconds
 
 
 class RegisterView(views.APIView):
