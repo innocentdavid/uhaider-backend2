@@ -1,3 +1,4 @@
+import time
 import base64
 import datetime
 import jwt
@@ -22,6 +23,8 @@ from .serializers import *
 from datetime import datetime, timedelta
 from django.views.decorators.csrf import csrf_exempt
 
+from config import expiration_time_seconds
+
 
 class RegisterView(views.APIView):
     def post(self, request):
@@ -40,7 +43,9 @@ class RegisterView(views.APIView):
 
         payload = {
             'id': user.email,
-            'exp': datetime.utcnow() + timedelta(hours=24),
+            # 'exp': datetime.utcnow() + timedelta(hours=24),
+            'exp': expiration_time_seconds,
+            'iat': int(time.time())
         }
 
         token = jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
@@ -57,11 +62,13 @@ class RegisterView(views.APIView):
         # response_data['jwt'] = token
         response_data['message'] = "success"
         response_data['token'] = token
+        response_data['expiration_time'] = expiration_time_seconds
         response.data = response_data
         # response.status
         return response
 
         # return Response(response_data, status=status.HTTP_201_CREATED)
+
 
 
 class LoginView(views.APIView):
@@ -79,11 +86,11 @@ class LoginView(views.APIView):
 
         # Generate JWT token
         token_payload = {
-            # 'id': user.id,
-            # 'email': user.email,
             'id': user.email,
-            'exp': datetime.utcnow() + timedelta(hours=24),
-            'iat': datetime.utcnow()
+            # 'exp': datetime.utcnow() + timedelta(seconds=10),
+            # 'iat': datetime.utcnow()
+            'exp': expiration_time_seconds,
+            'iat': int(time.time())
         }
 
         token = jwt.encode(
@@ -93,6 +100,7 @@ class LoginView(views.APIView):
         response_data = {
             'message': 'Login successful.',
             'token': token,
+            'expiration_time': expiration_time_seconds,
             'user': user_serializer.data  # Include serialized user data in the response
         }
 

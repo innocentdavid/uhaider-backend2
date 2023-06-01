@@ -146,17 +146,17 @@ class Application(models.Model):
     description_of_business = models.CharField(
         max_length=255, default="", blank=True)
 
-    advanced_price = models.IntegerField(blank=True, null=True)
-    commission_price = models.IntegerField(blank=True, null=True)
-    percentage = models.IntegerField(blank=True, null=True)
-    factor = models.IntegerField(blank=True, null=True)
-    total_fee = models.IntegerField(blank=True, null=True)
-    payback = models.IntegerField(blank=True, null=True)
+    advanced_price = models.IntegerField(default=0)
+    commission_price = models.IntegerField(default=0)
+    percentage = models.IntegerField(default=0)
+    factor = models.IntegerField(default=0)
+    total_fee = models.IntegerField(default=0)
+    payback = models.IntegerField(default=0)
     term = models.CharField(
         max_length=255, default="", blank=True)
-    frequency = models.IntegerField(blank=True, null=True)
-    payment = models.IntegerField(blank=True, null=True)
-    net_funding_amount = models.IntegerField(blank=True, null=True)
+    frequency = models.IntegerField(default=0)
+    payment = models.IntegerField(default=0)
+    net_funding_amount = models.IntegerField(default=0)
 
     # def save(self, *args, **kwargs):
     #     self.count += 1
