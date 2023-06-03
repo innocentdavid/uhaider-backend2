@@ -70,7 +70,6 @@ class RegisterView(views.APIView):
         # return Response(response_data, status=status.HTTP_201_CREATED)
 
 
-
 class LoginView(views.APIView):
     def post(self, request):
         email = request.data.get('email')
