@@ -24,7 +24,8 @@ class TokenAuthenticationMiddleware:
         
         if url_path is not None and url_path.startswith('/api/pdfs/pdf_files'):
             authorization = request.GET.get('authorization')
-            token = authorization
+            if authorization:
+                token = authorization
             # response = self.get_response(request)
             # return response
         if url_path is not None and url_path.startswith('/pdf_files'):
