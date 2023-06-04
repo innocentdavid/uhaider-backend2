@@ -288,6 +288,9 @@ class SubmittedApplication(models.Model):
 
 
 class PdfFile(models.Model):
+    count = models.IntegerField(default=0)
+    idx = models.CharField(
+        max_length=250, primary_key=True, unique=True, default=generate_random_string)
     application = models.ForeignKey(
         Application, on_delete=models.CASCADE, related_name="pdfFiles")
     file = models.FileField(upload_to=get_pdf_upload_path)
@@ -371,6 +374,20 @@ class LatestRecord(models.Model):
 
     def __str__(self):
         return f"{self.last_email_id} - {self.subject}"
+
+
+@receiver(pre_save, sender=PdfFile)
+def update_count_field_email(sender, instance, **kwargs):
+    if instance:
+        last_PdfFile = PdfFile.objects.order_by(
+            'count').last()
+        if last_PdfFile is not None:
+            last_count = last_PdfFile.count
+            # print(last_count)
+        else:
+            last_count = 0
+
+        instance.count = last_count+1
 
 
 @receiver(pre_save, sender=Email)
