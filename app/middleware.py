@@ -20,9 +20,13 @@ class TokenAuthenticationMiddleware:
 
     def __call__(self, request):
         url_path = get_url_path(request)
+        token = request.COOKIES.get(self.TOKEN_COOKIE_NAME, None)
+        
         if url_path is not None and url_path.startswith('/api/pdfs/pdf_files'):
-            response = self.get_response(request)
-            return response
+            authorization = request.GET.get('authorization')
+            token = authorization
+            # response = self.get_response(request)
+            # return response
         if url_path is not None and url_path.startswith('/pdf_files'):
             response = self.get_response(request)
             return response
@@ -30,8 +34,11 @@ class TokenAuthenticationMiddleware:
                 and url_path in self.EXCLUDED_VIEWS):
             response = self.get_response(request)
             return response
+            
 
-        token = request.COOKIES.get(self.TOKEN_COOKIE_NAME, None)
+        # token = request.COOKIES.get(self.TOKEN_COOKIE_NAME, None)
+        print("token: ")
+        print(token)
 
         if token is None:
             auth_header = request.META.get('HTTP_AUTHORIZATION')
