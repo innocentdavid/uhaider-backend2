@@ -36,10 +36,6 @@ class TokenAuthenticationMiddleware:
             return response
             
 
-        # token = request.COOKIES.get(self.TOKEN_COOKIE_NAME, None)
-        print("token: ")
-        print(token)
-
         if token is None:
             auth_header = request.META.get('HTTP_AUTHORIZATION')
             if auth_header is not None and auth_header.startswith('Bearer '):
