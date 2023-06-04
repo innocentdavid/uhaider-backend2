@@ -255,12 +255,12 @@ class PDdfsViewSet(viewsets.ModelViewSet):
         context = {
             'pdf_url': pdf_file.file,
         }
-        return render(request, 'pdf_viewer.html', context)
+        # return render(request, 'pdf_viewer.html', context)
 
-        # with open(pdf_file.file.path, 'rb') as pdf:
-        #     response = HttpResponse(pdf.read(), content_type='application/pdf')
-        #     response['Content-Disposition'] = 'inline;filename=mypdf.pdf'
-        #     return response
+        with open(pdf_file.file.path, 'rb') as pdf:
+            response = HttpResponse(pdf.read(), content_type='application/pdf')
+            response['Content-Disposition'] = 'inline;filename=mypdf.pdf'
+            return response
 
     def create(self, request, *args, **kwargs):
         if not 'pdf_type' in request.data:
