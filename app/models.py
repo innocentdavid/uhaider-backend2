@@ -377,12 +377,14 @@ class LatestRecord(models.Model):
 
 
 @receiver(pre_save, sender=PdfFile)
-def update_count_field_email(sender, instance, **kwargs):
+def update_count_field_pdf(sender, instance, **kwargs):
     if instance:
         last_PdfFile = PdfFile.objects.order_by(
             'count').last()
         if last_PdfFile is not None:
             last_count = last_PdfFile.count
+            # if not last_count:
+            #     last_count = 0
             # print(last_count)
         else:
             last_count = 0
