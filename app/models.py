@@ -327,10 +327,11 @@ class PdfFile(models.Model):
         return f'{self.business_name} ({self.file.name})'
 
 
-@receiver(pre_delete, sender=Application)
 # Delete the associated PDF files to an application
+@receiver(pre_delete, sender=Application)
 def delete_related_pdfs(sender, instance, **kwargs):
-    pdf_file = PdfFile.objects.get(application_id=instance.application_id)
+    # pdf_file = PdfFile.objects.get(application_id=instance.application_id)
+    pdf_file = PdfFile.objects.filter(application_id=instance.application_id).first()
     if pdf_file:
         id = instance.count
         application_id = instance.application_id
