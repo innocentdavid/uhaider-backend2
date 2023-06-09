@@ -93,9 +93,6 @@ class LoginView(views.APIView):
             'exp': expiration_timestamp,
             'iat': int(time.time())
         }
-        
-        print("expiration_timestamp: ")
-        print(expiration_timestamp)
 
         token = jwt.encode(
             token_payload, settings.SECRET_KEY, algorithm='HS256')
