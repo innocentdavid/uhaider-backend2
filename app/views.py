@@ -23,7 +23,9 @@ from .serializers import *
 from datetime import datetime, timedelta
 from django.views.decorators.csrf import csrf_exempt
 
-from .config import expiration_timestamp
+import datetime
+import calendar
+from .config import exp_hours
 
 
 class RegisterView(views.APIView):
@@ -40,6 +42,12 @@ class RegisterView(views.APIView):
         serializer = UserSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
+        
+        current_datetime = datetime.datetime.now()
+        expiration_time_seconds = current_datetime + \
+            datetime.timedelta(hours=exp_hours)
+        expiration_timestamp = calendar.timegm(
+            expiration_time_seconds.utctimetuple())
 
         payload = {
             'id': user.email,
@@ -49,13 +57,6 @@ class RegisterView(views.APIView):
 
         token = jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
         response = Response()
-        # response.set_cookie(
-        #     key='jwt',
-        #     value=token,
-        #     # httponly=True,
-        #     secure=True,
-        #     samesite='None'
-        # )
 
         response_data = serializer.data
         # response_data['jwt'] = token
@@ -82,6 +83,9 @@ class LoginView(views.APIView):
         if user is None:
             return Response({'message': 'Invalid credentials.'}, status=status.HTTP_401_UNAUTHORIZED)
         
+        current_datetime = datetime.datetime.now()
+        expiration_time_seconds = current_datetime + datetime.timedelta(hours=exp_hours)
+        expiration_timestamp = calendar.timegm(expiration_time_seconds.utctimetuple())
         
         # Generate JWT token
         token_payload = {
@@ -89,6 +93,9 @@ class LoginView(views.APIView):
             'exp': expiration_timestamp,
             'iat': int(time.time())
         }
+        
+        print("expiration_timestamp: ")
+        print(expiration_timestamp)
 
         token = jwt.encode(
             token_payload, settings.SECRET_KEY, algorithm='HS256')
@@ -102,16 +109,6 @@ class LoginView(views.APIView):
         }
 
         response = Response(response_data, status=status.HTTP_200_OK)
-
-        # response.set_cookie(
-        #     key='jwt',
-        #     value=token,
-        #     # httponly=True,
-        #     samesite='None',
-        #     secure=True,
-        #     expires=datetime.utcnow() + timedelta(days=30),
-        #     path='/',
-        # )
 
         return response
 

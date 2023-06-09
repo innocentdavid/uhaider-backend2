@@ -158,17 +158,6 @@ class Application(models.Model):
     payment = models.IntegerField(default=0)
     net_funding_amount = models.IntegerField(default=0)
 
-    # def save(self, *args, **kwargs):
-    #     self.count += 1
-    #     super().save(*args, **kwargs)
-
-    # def save(self, *args, **kwargs):
-    #     # If this is a new instance, increment the count field
-    #     if not self.pk:
-    #         self.count = MyModel.objects.count() + 1
-
-    #     super().save(*args, **kwargs)
-
     def __str__(self):
         return f"{self.name_of_business} - {self.status}"
 
