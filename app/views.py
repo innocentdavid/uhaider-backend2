@@ -43,7 +43,7 @@ class RegisterView(views.APIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
         
-        current_datetime = datetime.datetime.now()
+        current_datetime = datetime.datetime.utcnow()
         expiration_time_seconds = current_datetime + \
             datetime.timedelta(hours=exp_hours)
         expiration_timestamp = calendar.timegm(
@@ -83,10 +83,12 @@ class LoginView(views.APIView):
         if user is None:
             return Response({'message': 'Invalid credentials.'}, status=status.HTTP_401_UNAUTHORIZED)
         
-        current_datetime = datetime.datetime.now()
+        current_datetime = datetime.datetime.utcnow()
+        # expiration_time_seconds = current_datetime + datetime.timedelta(seconds=20)
         expiration_time_seconds = current_datetime + datetime.timedelta(hours=exp_hours)
         expiration_timestamp = calendar.timegm(expiration_time_seconds.utctimetuple())
         
+        print(expiration_timestamp)
         # Generate JWT token
         token_payload = {
             'id': user.email,
