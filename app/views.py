@@ -30,7 +30,6 @@ from .config import exp_hours
 
 class RegisterView(views.APIView):
     def post(self, request):
-        # print(request.data)
         userWithEmail = CustomUser.objects.filter(
             email=request.data['email']).first()
         if userWithEmail is not None:
@@ -88,7 +87,6 @@ class LoginView(views.APIView):
         expiration_time_seconds = current_datetime + datetime.timedelta(hours=exp_hours)
         expiration_timestamp = calendar.timegm(expiration_time_seconds.utctimetuple())
         
-        print(expiration_timestamp)
         # Generate JWT token
         token_payload = {
             'id': user.email,
@@ -199,8 +197,8 @@ class EmailViewSet(viewsets.ModelViewSet):
                     filtered_queryset.append(q)
             return filtered_queryset
 
-        print("queryset")
-        print(vars(queryset))
+        # print("queryset")
+        # print(vars(queryset))
         return queryset
 
 
@@ -319,7 +317,7 @@ def update_pdf_data(request, id):
         return Response({"message": "PDF file not found"}, status=status.HTTP_404_NOT_FOUND)
 
     serializer = PdfFileSerializer(pdf_file, data=request.data, partial=True)
-    print(serializer.is_valid())
+    # print(serializer.is_valid())
     if serializer.is_valid():
         serializer.save()
         # try:
@@ -422,27 +420,33 @@ class SubmittedApplicationViewSet(viewsets.ModelViewSet):
                 return Response({"message": "funder not selected"}, status=status.HTTP_400_BAD_REQUEST)
 
             funders = request.data['funder_names']
-            response_data = {'error': []}
+            response_data = {'data': {}, 'error': [], 'success': [], 'failed': []}
 
             for f in funders:
-                funder = Funder.objects.filter(name=f['name']).first()
-                if not funder:
-                    response_data['error'].append(
-                        {'funder_name': f['name'], 'message': 'funder not found'})
-                    continue
+                try:
+                    funder = Funder.objects.filter(name=f['name']).first()
+                    if not funder:
+                        response_data['error'].append(
+                            {'funder_name': f['name'], 'message': 'funder not found'})
+                        response_data['failed'].append(f['name'])
+                        continue
 
-                application = Application.objects.filter(
-                    application_id=request.data['application_id']).first()
-                submittedApplication = SubmittedApplication(
-                    **serializer.validated_data)
-                submittedApplication_id = submittedApplication.submittedApplication_id
-                submittedApplication.application = application
-                submittedApplication.funder = funder
-                total_count = SubmittedApplication.objects.count()
-                submittedApplication.count = total_count+1
-                submittedApplication.save()
+                    application = Application.objects.filter(
+                        application_id=request.data['application_id']).first()
+                    submittedApplication = SubmittedApplication(
+                        **serializer.validated_data)
+                    submittedApplication_id = submittedApplication.submittedApplication_id
+                    submittedApplication.application = application
+                    submittedApplication.funder = funder
+                    total_count = SubmittedApplication.objects.count()
+                    submittedApplication.count = total_count+1
+                    submittedApplication.save()
+                    
+                    response_data['success'].append(f['name'])
+                except:
+                    response_data['failed'].append(f['name'])
 
-            response_data = serializer.data
+            response_data['data'] = serializer.data
             # response_data['submittedApplication_id'] = submittedApplication_id
             return Response(response_data, status=status.HTTP_201_CREATED)
 
