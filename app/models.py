@@ -62,17 +62,29 @@ class Application(models.Model):
         max_length=250, primary_key=True, unique=True, default=generate_random_string)
     date_submitted = models.CharField(
         max_length=255, default="", blank=True)
-    # status = models.ForeignKey(
-    #     Status, on_delete=models.PROTECT, related_name='applications', blank=True)
     status = models.CharField(
         max_length=255, default="Created", blank=True)
     status_description = models.CharField(
         max_length=255, default="Created", blank=True)
     status_date = models.CharField(
         max_length=255, default="", blank=True)
-
-    owners = models.CharField(
+    
+    #new advance info
+    email_id = models.CharField(
         max_length=255, default="", blank=True)
+    statement_missing = models.BooleanField(default=False)
+    opportunity_exist = models.BooleanField(default=False)
+    opportunity_id = models.CharField(
+        max_length=255, default="", blank=True)
+    source_email = models.EmailField(
+        max_length=255, default="", blank=True)
+    error = models.BooleanField(default=False)
+    subject = models.CharField(
+        max_length=255, default="", blank=True)
+    errors = models.JSONField(default=list)
+    multiple_owners = models.BooleanField(default=False)
+        
+    owners = models.JSONField(default=list)
     business_name_match_flag = models.CharField(
         max_length=255, default="", blank=True)
     credit_score = models.CharField(
@@ -146,22 +158,10 @@ class Application(models.Model):
     description_of_business = models.CharField(
         max_length=255, default="", blank=True)
 
-    advanced_price = models.IntegerField(default=0)
-    commission_price = models.IntegerField(default=0)
-    percentage = models.IntegerField(default=0)
-    factor = models.IntegerField(default=0)
-    total_fee = models.IntegerField(default=0)
-    payback = models.IntegerField(default=0)
-    term = models.CharField(
-        max_length=255, default="", blank=True)
-    frequency = models.IntegerField(default=0)
-    payment = models.IntegerField(default=0)
-    net_funding_amount = models.IntegerField(default=0)
-
     def __str__(self):
         return f"{self.name_of_business} - {self.status}"
-
-
+        
+        
 class SubmittedApplication(models.Model):
     count = models.IntegerField(default=0)
     funder = models.ForeignKey(
@@ -170,8 +170,6 @@ class SubmittedApplication(models.Model):
         max_length=250, primary_key=True, unique=True, default=generate_random_string)
     application = models.ForeignKey(
         Application, on_delete=models.CASCADE, related_name='submitted_applications')
-    # application_id = models.CharField(
-    #     max_length=250, default='')
     date_submitted = models.CharField(
         max_length=255, default="", blank=True)
     status = models.CharField(
@@ -181,8 +179,7 @@ class SubmittedApplication(models.Model):
     status_date = models.CharField(
         max_length=255, default="", blank=True)
 
-    owners = models.CharField(
-        max_length=255, default="", blank=True)
+    owners = models.JSONField(default=list)
     business_name_match_flag = models.CharField(
         max_length=255, default="", blank=True)
     credit_score = models.CharField(
@@ -191,69 +188,6 @@ class SubmittedApplication(models.Model):
     name_of_business = models.CharField(
         max_length=255, default="", blank=True)
     legal_business_name = models.CharField(
-        max_length=255, default="", blank=True)
-    dba = models.CharField(max_length=255, default="", blank=True)
-    address = models.CharField(
-        max_length=255, default="", blank=True)
-    suite = models.CharField(max_length=255, default="", blank=True)
-    city = models.CharField(max_length=255, default="", blank=True)
-    state = models.CharField(max_length=255, default="", blank=True)
-    zip = models.CharField(max_length=255, default="", blank=True)
-    phone = models.CharField(max_length=255, default="", blank=True)
-    legal_entry = models.CharField(
-        max_length=255, default="", blank=True)
-    state_inc = models.CharField(
-        max_length=255, default="", blank=True)
-    federal_tax_id = models.CharField(
-        max_length=255, default="", blank=True)
-    date_business_started = models.CharField(
-        max_length=255, default="", blank=True)
-    years_at_location = models.CharField(
-        max_length=255, default="", blank=True)
-    number_of_locations = models.CharField(
-        max_length=255, default="", blank=True)
-    length_of_ownership = models.CharField(
-        max_length=255, default="", blank=True)
-    state_of_inc = models.CharField(
-        max_length=255, default="", blank=True)
-    legal_entity = models.CharField(
-        max_length=255, default="", blank=True)
-    mobile = models.CharField(
-        max_length=255, default="", blank=True)
-    email = models.CharField(max_length=255, default="", blank=True)
-
-    owner_first_name = models.CharField(
-        max_length=255, default="", blank=True)
-    owner_last_name = models.CharField(
-        max_length=255, default="", blank=True)
-    owner_home_address = models.CharField(
-        max_length=255, default="", blank=True)
-    owner_city = models.CharField(
-        max_length=255, default="", blank=True)
-    owner_state = models.CharField(
-        max_length=255, default="", blank=True)
-    owner_zip = models.CharField(
-        max_length=255, default="", blank=True)
-    owner_ssn = models.CharField(
-        max_length=255, default="", blank=True)
-    owner_percentage_of_ownership = models.CharField(
-        max_length=255, default="", blank=True)
-    owner_dob = models.CharField(
-        max_length=255, default="", blank=True)
-    owner_phone = models.CharField(
-        max_length=255, default="", blank=True)
-
-    gross_monthly_sales = models.CharField(
-        max_length=255, default="", blank=True)
-    type_of_product_sold = models.CharField(
-        max_length=255, default="", blank=True)
-    has_open_cash_advances = models.CharField(
-        max_length=255, default="", blank=True)
-    has_used_cash_advance_plan_before = models.CharField(
-        max_length=255, default="", blank=True)
-    using_money_for = models.CharField(
-        max_length=255, default="", blank=True)
-    description_of_business = models.CharField(
         max_length=255, default="", blank=True)
 
     advanced_price = models.IntegerField(default=0)
@@ -267,10 +201,19 @@ class SubmittedApplication(models.Model):
     frequency = models.IntegerField(default=0)
     payment = models.IntegerField(default=0)
     net_funding_amount = models.IntegerField(default=0)
-
-    # def save(self, *args, **kwargs):
-    #     self.count += 1
-    #     super().save(*args, **kwargs)
+    
+    #new fields
+    salesforce_status = models.CharField(
+        max_length=255, default="", blank=True)
+    submission_id = models.CharField(
+        max_length=255, default="", blank=True)
+    replied = models.BooleanField(default=False)
+    replied_to = models.CharField(
+        max_length=255, default="", blank=True)
+    reply_text = models.TextField(default="", blank=True)
+    reply_link = models.URLField(max_length=200, default="", blank=True)
+    error_parsing = models.BooleanField(default=False)
+    errors_parsing = models.JSONField(default=list)
 
     def __str__(self):
         return f"{self.name_of_business} - {self.status}"
@@ -371,6 +314,7 @@ def update_count_field_pdf(sender, instance, **kwargs):
     if instance:
         last_PdfFile = PdfFile.objects.order_by(
             'count').last()
+        # print(last_PdfFile)
         if last_PdfFile is not None:
             last_count = last_PdfFile.count
             # if not last_count:
