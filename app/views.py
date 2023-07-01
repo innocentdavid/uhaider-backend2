@@ -264,6 +264,17 @@ class PDdfsViewSet(viewsets.ModelViewSet):
 
         pdf_type = request.data['pdf_type']
         application_id = request.data['application_id']
+        # If the code reaches this point, it means the PdfFile object exists
+        # You can use 'check_if_pdf_file_exist' variable here for further processing if needed.
+        try:
+            check_if_pdf_file_exist = get_object_or_404(
+                PdfFile, application_id=application_id, pdf_type=pdf_type)
+            return Response({"message": f"{pdf_type} Already exist."}, status=status.HTTP_400_BAD_REQUEST)
+        except Http404:
+            # If the PdfFile object does not exist, this block will be executed
+            # Handle the case where the PdfFile does not exist (e.g., raise an error, return an HTTP response, etc.)
+            pass
+            
         pdf_file = request.data['pdf_file']
 
         business_name = ""
