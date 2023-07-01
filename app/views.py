@@ -367,9 +367,17 @@ def generate_random_string(length=6):
     return r
 
 
+# class AppPagination(PageNumberPagination):
+# class AppPagination():
+#     page_size = 1000  # Number of objects to be displayed per page
+#     # Name of the query parameter for specifying the page size
+#     page_size_query_param = 'q'
+
+
 class ApplicationViewSet(viewsets.ModelViewSet):
     queryset = Application.objects.order_by('-count').all()
     serializer_class = ApplicationSerializer
+    # pagination_class = AppPagination
 
     def create(self, request, *args, **kwargs):
         last_application = Application.objects.order_by(
@@ -411,6 +419,7 @@ class ApplicationViewSet(viewsets.ModelViewSet):
 class SubmittedApplicationViewSet(viewsets.ModelViewSet):
     queryset = SubmittedApplication.objects.order_by('-date_submitted').all()
     serializer_class = SubmittedApplicationSerializer
+    # pagination_class = AppPagination
 
     def create(self, request, *args, **kwargs):
         serializer = SubmittedApplicationSerializer(data=request.data)
