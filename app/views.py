@@ -9,7 +9,7 @@ import random
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.db.models import Sum
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse, JsonResponse, Http404
 from django.shortcuts import get_object_or_404, render
 from rest_framework import exceptions, generics, parsers, status, viewsets, views
 from rest_framework.permissions import BasePermission
@@ -269,7 +269,9 @@ class PDdfsViewSet(viewsets.ModelViewSet):
         try:
             check_if_pdf_file_exist = get_object_or_404(
                 PdfFile, application_id=application_id, pdf_type=pdf_type)
-            return Response({"message": f"{pdf_type} Already exist."}, status=status.HTTP_400_BAD_REQUEST)
+            print("Already exist.")
+            # return Response({"message": f"{pdf_type} Already exist."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(status=status.HTTP_201_CREATED)
         except Http404:
             # If the PdfFile object does not exist, this block will be executed
             # Handle the case where the PdfFile does not exist (e.g., raise an error, return an HTTP response, etc.)
